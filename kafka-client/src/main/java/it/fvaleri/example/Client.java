@@ -107,20 +107,19 @@ public abstract class Client extends Thread {
     }
 
     void createTopics(String... topicNames) {
-        createTopics(Configuration.BOOTSTRAP_SERVERS, -1, topicNames);
+        // use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
+        createTopics(Configuration.BOOTSTRAP_SERVERS, -1, -1, topicNames);
     }
 
-    void createTopics(String bootstrapServers, int numPartitions, String... topicNames) {
+    void createTopics(String bootstrapServers, int numPartitions, int replicationFactor, String... topicNames) {
         Properties props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(AdminClientConfig.CLIENT_ID_CONFIG, "client" + UUID.randomUUID());
         addConfig(props, Configuration.ADMIN_CONFIG);
         addSecurityConfig(props);
         try (Admin admin = Admin.create(props)) {
-            // use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
-            short replicationFactor = -1;
             List<NewTopic> newTopics = Arrays.stream(topicNames)
-                .map(name -> new NewTopic(name, numPartitions, replicationFactor))
+                .map(name -> new NewTopic(name, numPartitions, (short) replicationFactor))
                 .collect(Collectors.toList());
             try {
                 admin.createTopics(newTopics).all().get();
