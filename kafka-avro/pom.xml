@@ -17,9 +17,9 @@
         <apicurio.registry.version>2.4.1.Final</apicurio.registry.version>
         <jackson.databind.version>2.18.3</jackson.databind.version>
         <plugin.compiler.version>3.14.0</plugin.compiler.version>
-        <plugin.dependency.version>3.8.1</plugin.dependency.version>
-        <plugin.jar.version>3.4.2</plugin.jar.version>
         <plugin.exec.version>3.5.0</plugin.exec.version>
+        <plugin.jar.version>3.4.2</plugin.jar.version>
+        <plugin.dependency.version>3.8.1</plugin.dependency.version>
     </properties>
 
     <dependencies>
