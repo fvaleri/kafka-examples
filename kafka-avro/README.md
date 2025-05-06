@@ -31,7 +31,7 @@ mvn compile exec:java -q
 mvn package
 
 docker build -t ghcr.io/fvaleri/kafka-avro:latest .
-docker login ghcr.io -u fvaleri -p $TOKEN
+echo $TOKEN | docker login ghcr.io -u fvaleri --password-stdin
 docker push ghcr.io/fvaleri/kafka-avro:latest
 
 export BOOTSTRAP_SERVERS=$(kubectl get k my-cluster -o yaml | yq '.status.listeners.[] | select(.name == "external").bootstrapServers') \

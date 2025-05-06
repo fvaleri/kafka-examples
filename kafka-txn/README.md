@@ -14,7 +14,7 @@ bin/kafka-console-consumer.sh --bootstrap-server :9092 --topic output-topic --fr
 mvn package
 
 docker build -t ghcr.io/fvaleri/kafka-txn:latest .
-docker login ghcr.io -u fvaleri -p $TOKEN
+echo $TOKEN | docker login ghcr.io -u fvaleri --password-stdin
 docker push ghcr.io/fvaleri/kafka-txn:latest
 
 kubectl create -f install.yaml

@@ -7,7 +7,7 @@ CLIENT_TYPE="consumer" NUM_MESSAGES="100" mvn compile exec:java
 mvn package
 
 docker build -t ghcr.io/fvaleri/kafka-client:latest .
-docker login ghcr.io -u fvaleri -p $TOKEN
+echo $TOKEN | docker login ghcr.io -u fvaleri --password-stdin
 docker push ghcr.io/fvaleri/kafka-client:latest
 
 kubectl create -f install.yaml

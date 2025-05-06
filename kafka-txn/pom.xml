@@ -13,7 +13,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <main.class>it.fvaleri.kafka.Main</main.class>
-        <kafka.version>3.9.0</kafka.version>
+        <kafka.version>4.0.0</kafka.version>
         <jackson.databind.version>2.18.3</jackson.databind.version>
         <plugin.compiler.version>3.14.0</plugin.compiler.version>
         <plugin.exec.version>3.5.0</plugin.exec.version>
