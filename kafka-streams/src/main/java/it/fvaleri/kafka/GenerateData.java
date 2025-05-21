@@ -1,7 +1,4 @@
-/*
- * Copyright 2020 Federico Valeri.
- * Licensed under the Apache License 2.0 (see LICENSE file).
- */
+
 package it.fvaleri.kafka;
 
 import com.google.gson.Gson;
