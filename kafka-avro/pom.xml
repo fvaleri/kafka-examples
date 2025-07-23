@@ -13,7 +13,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <main.class>it.fvaleri.kafka.Main</main.class>
-        <kafka.version>4.0.0</kafka.version>
+        <kafka.version>4.1.0</kafka.version>
         <apicurio.registry.version>2.4.1.Final</apicurio.registry.version>
         <jackson.databind.version>2.18.3</jackson.databind.version>
         <plugin.compiler.version>3.14.0</plugin.compiler.version>
@@ -136,4 +136,31 @@
             </plugin-->
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>asfs</id>
+            <url>https://repository.apache.org/content/groups/staging</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>asfs</id>
+            <url>https://repository.apache.org/content/groups/staging</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 </project>

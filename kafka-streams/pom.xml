@@ -13,11 +13,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <main.class>it.fvaleri.kafka.Main</main.class>
-        <kafka.version>3.6.0</kafka.version>
-        <gson.version>2.10.1</gson.version>
-        <slf4j.version>2.0.6</slf4j.version>
-        <plugin.compiler.version>3.13.0</plugin.compiler.version>
-        <plugin.shade.version>3.4.1</plugin.shade.version>
+        <kafka.version>4.1.0</kafka.version>
+        <gson.version>2.13.1</gson.version>
+        <plugin.compiler.version>3.14.0</plugin.compiler.version>
+        <plugin.shade.version>3.6.0</plugin.shade.version>
     </properties>
 
     <dependencies>
@@ -35,16 +34,6 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
 

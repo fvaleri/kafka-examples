@@ -12,9 +12,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
-        <kafka.version>3.4.0</kafka.version>
-        <plugin.compiler.version>3.13.0</plugin.compiler.version>
-        <plugin.shade.version>3.4.1</plugin.shade.version>
+        <kafka.version>4.1.0</kafka.version>
+        <plugin.compiler.version>3.14.0</plugin.compiler.version>
+        <plugin.shade.version>3.6.0</plugin.shade.version>
     </properties>
 
     <dependencies>
@@ -51,4 +51,31 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>asfs</id>
+            <url>https://repository.apache.org/content/groups/staging</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>asfs</id>
+            <url>https://repository.apache.org/content/groups/staging</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 </project>

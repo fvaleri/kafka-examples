@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>it.fvaleri.kafka</groupId>
-    <artifactId>kafka-mtc</artifactId>
+    <artifactId>kafka-share</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
@@ -13,9 +13,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <main.class>it.fvaleri.kafka.Main</main.class>
-        <kafka.version>3.3.1</kafka.version>
-        <jackson-databind.version>2.14.1</jackson-databind.version>
-        <slf4j.version>2.0.6</slf4j.version>
+        <kafka.version>4.1.0</kafka.version>
         <plugin.compiler.version>3.13.0</plugin.compiler.version>
         <plugin.exec.version>3.1.0</plugin.exec.version>
         <plugin.shade.version>3.4.1</plugin.shade.version>
@@ -26,21 +24,6 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>${kafka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson-databind.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
 
@@ -83,4 +66,31 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>asfs</id>
+            <url>https://repository.apache.org/content/groups/staging</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>asfs</id>
+            <url>https://repository.apache.org/content/groups/staging</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 </project>

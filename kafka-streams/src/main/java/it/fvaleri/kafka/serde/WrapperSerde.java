@@ -1,4 +1,3 @@
-
 package it.fvaleri.kafka.serde;
 
 import org.apache.kafka.common.serialization.Deserializer;

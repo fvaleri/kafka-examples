@@ -1,4 +1,3 @@
-
 package it.fvaleri.kafka;
 
 import it.fvaleri.kafka.model.PageView;
@@ -18,11 +17,16 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.errors.DeserializationExceptionHandler;
+import org.apache.kafka.streams.errors.ErrorHandlerContext;
 import org.apache.kafka.streams.errors.ProductionExceptionHandler;
 import org.apache.kafka.streams.errors.StreamsException;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
-import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.JoinWindows;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.StreamJoined;
 
 import java.time.Duration;
 import java.util.Map;
@@ -30,9 +34,11 @@ import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * This example takes 3 streams of user data: searches, clicks and profile-updates. It joins those activity streams
- * together, to generate an holistic view of user activity (record: user's location, interests, searches, clicks).
- * It uses the unique windowed-join, allowing us to match clicks with the search that happened in the same time window.
+ * This example takes 3 streams of user data: searches, clicks and profile-updates.
+ * It joins those activity streams together, to generate an holistic view of user
+ * activity (record: user's location, interests, searches, clicks). It uses the
+ * unique windowed-join, allowing us to match clicks with the search that
+ * happened in the same time window.
  */
 public class Main {
     public static final String BOOTSTRAP_SERVERS = "localhost:9092";
@@ -80,9 +86,7 @@ public class Main {
             @Override
             public void run() {
                 System.out.println("Shutting down");
-                if (streams != null) {
-                    streams.close(Duration.ofSeconds(10));
-                }
+                streams.close(Duration.ofSeconds(10));
                 latch.countDown();
             }
         });
@@ -115,8 +119,8 @@ public class Main {
         // if you configure N standby replicas, you need to provision N+1 KafkaStreams instances
         props.put(StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG, 0);
         // serde exception handlers
-        props.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, MyDeserializationErrorHandler.class);
-        props.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, MyProductionExceptionHandler.class);
+        props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, MyDeserializationErrorHandler.class);
+        props.put(StreamsConfig.PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, MyProductionExceptionHandler.class);
         // reconnections and retries
         props.put(StreamsConfig.RECONNECT_BACKOFF_MS_CONFIG, 50);
         props.put(StreamsConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG, 1_000);
@@ -152,9 +156,9 @@ public class Main {
         int errorCounter = 0;
 
         @Override
-        public DeserializationHandlerResponse handle(ProcessorContext processorContext,
-                                                     ConsumerRecord<byte[], byte[]> consumerRecord,
-                                                     Exception e) {
+        public DeserializationHandlerResponse handle(final ErrorHandlerContext context,
+                                                     final ConsumerRecord<byte[], byte[]> record,
+                                                     final Exception exception) {
             if (errorCounter++ < 25) {
                 return DeserializationHandlerResponse.CONTINUE;
             }
@@ -168,8 +172,10 @@ public class Main {
 
     public static class MyProductionExceptionHandler implements ProductionExceptionHandler {
         @Override
-        public ProductionExceptionHandlerResponse handle(ProducerRecord<byte[], byte[]> producerRecord, Exception e) {
-            if (e instanceof RecordTooLargeException) {
+        public ProductionExceptionHandlerResponse handle(final ErrorHandlerContext context,
+                                                         final ProducerRecord<byte[], byte[]> record,
+                                                         final Exception exception) {
+            if (exception instanceof RecordTooLargeException) {
                 return ProductionExceptionHandlerResponse.CONTINUE;
             }
             return ProductionExceptionHandlerResponse.FAIL;

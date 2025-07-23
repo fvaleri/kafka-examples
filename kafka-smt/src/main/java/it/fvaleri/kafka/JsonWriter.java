@@ -1,4 +1,3 @@
-
 package it.fvaleri.kafka;
 
 import org.apache.kafka.common.config.ConfigDef;

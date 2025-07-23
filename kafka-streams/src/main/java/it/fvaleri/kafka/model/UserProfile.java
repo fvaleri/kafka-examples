@@ -1,4 +1,3 @@
-
 package it.fvaleri.kafka.model;
 
 public class UserProfile {

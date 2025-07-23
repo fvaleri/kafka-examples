@@ -1,4 +1,3 @@
-
 package it.fvaleri.kafka;
 
 import com.google.gson.Gson;
