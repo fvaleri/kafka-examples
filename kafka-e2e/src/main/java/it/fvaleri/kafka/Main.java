@@ -48,6 +48,7 @@ public class Main {
             producerProps.put(ProducerConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
             producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
             producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName());
+            // to minimize latency in low throughput use cases set linger.ms=0 on the producer
             producerProps.put(ProducerConfig.LINGER_MS_CONFIG, 0);
 
             final Properties consumerProps = new Properties();
@@ -56,7 +57,7 @@ public class Main {
             consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
             consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString());
             consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-            // to minimize latency set group.coordinator.append.linger.ms=0 on the broker
+            // to minimize latency in low throughput use cases set group.coordinator.append.linger.ms=0 on the broker
 
             try (final KafkaProducer<String, Long> kafkaProducer = new KafkaProducer<>(producerProps);
                  final KafkaConsumer<String, Long> kafkaConsumer = new KafkaConsumer<>(consumerProps)) {
