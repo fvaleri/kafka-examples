@@ -69,7 +69,7 @@ public abstract class Client extends Thread {
     void onShutdown() {
     }
     
-    void sleepFor(long millis) {
+    void sleepMs(long millis) {
         try {
             TimeUnit.MILLISECONDS.sleep(millis);
         } catch (InterruptedException e) {

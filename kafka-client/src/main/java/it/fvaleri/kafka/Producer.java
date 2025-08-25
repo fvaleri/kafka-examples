@@ -22,7 +22,7 @@ public class Producer extends Client implements Callback {
             createTopics(Configuration.TOPIC_NAME);
             byte[] value = randomBytes(Configuration.MESSAGE_SIZE_BYTES);
             while (!closed.get() && messageCount.get() < Configuration.NUM_MESSAGES) {
-                sleepFor(Configuration.PROCESSING_DELAY_MS);
+                sleepMs(Configuration.PROCESSING_DELAY_MS);
                 // async send but still blocks when buffer.memory is full or metadata are not available
                 // InitProducerId(leader), Produce(leader)
                 producer.send(new ProducerRecord<>(Configuration.TOPIC_NAME, messageCount.get(), value), this);

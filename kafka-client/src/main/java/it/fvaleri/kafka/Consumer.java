@@ -46,7 +46,7 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
                         for (ConsumerRecord<Long, byte[]> record : records) {
                             System.out.printf("Record fetched from partition %s-%d offset %d%n",
                                 record.topic(), record.partition(), record.offset());
-                            sleepFor(Configuration.PROCESSING_DELAY_MS);
+                            sleepMs(Configuration.PROCESSING_DELAY_MS);
                             // we only add to pending offsets after processing
                             pendingOffsets.put(new TopicPartition(record.topic(), record.partition()),
                                 new OffsetAndMetadata(record.offset() + 1, null));
