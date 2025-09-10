@@ -43,6 +43,8 @@
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.databind.version}</version>
         </dependency>
+        <!-- The Kafka client already includes SLF4J API,
+             so you only need the implementation. -->
         <!--dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
