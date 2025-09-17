@@ -9,8 +9,12 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.LongSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Producer extends Client implements Callback {
+    private static final Logger LOG = LoggerFactory.getLogger(Producer.class);
+
     public Producer(String threadName) {
         super(threadName);
     }
@@ -28,7 +32,7 @@ public class Producer extends Client implements Callback {
                 producer.send(new ProducerRecord<>(Configuration.TOPIC_NAME, messageCount.get(), value), this);
                 messageCount.incrementAndGet();
             }
-            System.out.println("Flushing records");
+            LOG.info("Flushing records");
             producer.flush();
         }
     }
@@ -47,12 +51,12 @@ public class Producer extends Client implements Callback {
     @Override
     public void onCompletion(RecordMetadata metadata, Exception e) {
         if (e != null) {
-            System.err.println(e.getMessage());
+            LOG.error("Error sending record: {}", e.getMessage());
             if (!retriable(e)) {
                 shutdown(e);
             }
         } else {
-            System.out.printf("Record sent to partition %s-%d offset %d%n",
+            LOG.info("Record sent to partition {}-{} offset {}",
                 metadata.topic(), metadata.partition(), metadata.offset());
         }
     }

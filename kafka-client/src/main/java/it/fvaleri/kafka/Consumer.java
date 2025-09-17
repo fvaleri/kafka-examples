@@ -13,6 +13,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.RecordDeserializationException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.LongDeserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,6 +25,8 @@ import static java.time.Duration.ofMillis;
 import static java.util.Collections.singleton;
 
 public class Consumer extends Client implements ConsumerRebalanceListener, OffsetCommitCallback {
+    private static final Logger LOG = LoggerFactory.getLogger(Consumer.class);
+
     private KafkaConsumer<Long, byte[]> kafkaConsumer;
     private Map<TopicPartition, OffsetAndMetadata> pendingOffsets = new HashMap<>();
 
@@ -36,7 +40,7 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
         try (var consumer = createKafkaConsumer()) {
             kafkaConsumer = consumer;
             consumer.subscribe(singleton(Configuration.TOPIC_NAME), this);
-            System.out.printf("Subscribed to %s%n", Configuration.TOPIC_NAME);
+            LOG.info("Subscribed to {}", Configuration.TOPIC_NAME);
             while (!closed.get() && messageCount.get() < Configuration.NUM_MESSAGES) {
                 try {
                     // next poll must be called within session.timeout.ms to avoid rebalance
@@ -44,7 +48,7 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
                     ConsumerRecords<Long, byte[]> records = consumer.poll(ofMillis(Configuration.POLL_TIMEOUT_MS));
                     if (!records.isEmpty()) {
                         for (ConsumerRecord<Long, byte[]> record : records) {
-                            System.out.printf("Record fetched from partition %s-%d offset %d%n",
+                            LOG.info("Record fetched from partition {}-{} offset {}",
                                 record.topic(), record.partition(), record.offset());
                             sleepMs(Configuration.PROCESSING_DELAY_MS);
                             // we only add to pending offsets after processing
@@ -59,19 +63,19 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
                         pendingOffsets.clear();
                     }
                 } catch (OffsetOutOfRangeException | NoOffsetForPartitionException e) {
-                    System.out.println("Invalid or no offset found without auto.reset.policy, using latest");
+                    LOG.warn("Invalid or no offset found without auto.reset.policy, using latest");
                     consumer.seekToEnd(e.partitions());
                     consumer.commitSync();
                 } catch (RecordDeserializationException e) {
                     // parsed records are returned first, the RDE is thrown on the next poll
-                    System.out.printf("Skipping invalid record at partition %s offset %d%n", e.topicPartition(), e.offset());
+                    LOG.warn("Skipping invalid record at partition {} offset {}", e.topicPartition(), e.offset());
                     consumer.seek(e.topicPartition(), e.offset() + 1);
                     // in addition to skip the bad record you may want to send it to a DLQ (see KIP-1036)
                     if (messageCount.incrementAndGet() == Configuration.NUM_MESSAGES) {
                         break;
                     }
                 } catch (Exception e) {
-                    System.err.println(e.getMessage());
+                    LOG.error("Error processing records: {}", e.getMessage());
                     if (!retriable(e)) {
                         shutdown(e);
                     }
@@ -95,12 +99,12 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
 
     @Override
     public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-        System.out.printf("Assigned partitions: %s%n", partitions);
+        LOG.info("Assigned partitions: {}", partitions);
     }
 
     @Override
     public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-        System.out.printf("Revoked partitions: %s%n", partitions);
+        LOG.info("Revoked partitions: {}", partitions);
         // commit pending offsets before losing the partition ownership
         kafkaConsumer.commitSync(pendingOffsets);
         pendingOffsets.clear();
@@ -108,7 +112,7 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
 
     @Override
     public void onPartitionsLost(Collection<TopicPartition> partitions) {
-        System.out.printf("Lost partitions: %s%n", partitions);
+        LOG.info("Lost partitions: {}", partitions);
         // this is called when partitions are reassigned before we had a chance to revoke them gracefully
         // we can't commit pending offsets because these partitions are probably owned by other consumers already
         // nevertheless, we may need to do some other cleanup
@@ -117,7 +121,7 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
     @Override
     public void onComplete(Map<TopicPartition, OffsetAndMetadata> map, Exception e) {
         if (e != null) {
-            System.err.println("Failed to commit offsets");
+            LOG.error("Failed to commit offsets: {}", e.getMessage());
             if (!retriable(e)) {
                 shutdown(e);
             }

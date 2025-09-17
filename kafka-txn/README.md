@@ -5,7 +5,7 @@ export BOOTSTRAP_SERVERS="localhost:9092" \
        GROUP_ID="my-group" \
        INPUT_TOPIC="input-topic" \
        OUTPUT_TOPIC="output-topic" 
-mvn compile exec:java -q
+mvn compile exec:java
 
 bin/kafka-console-producer.sh --bootstrap-server :9092 --topic input-topic
 bin/kafka-console-consumer.sh --bootstrap-server :9092 --topic output-topic --from-beginning

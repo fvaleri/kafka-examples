@@ -1,3 +1,3 @@
 ```sh
-mvn compile exec:java -q
+mvn compile exec:java
 ```

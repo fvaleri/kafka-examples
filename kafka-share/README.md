@@ -7,7 +7,7 @@ bin/kafka-features.sh --bootstrap-server :9092 upgrade --feature share.version=1
 bin/kafka-topics.sh --bootstrap-server :9092 --create --topic my-topic --partitions 1
 
 # run the example in two different shells
-mvn compile exec:java -q
+mvn compile exec:java
 
 # check share groups
 bin/kafka-share-groups.sh --bootstrap-server :9092 --describe --group my-share-group

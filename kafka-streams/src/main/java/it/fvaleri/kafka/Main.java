@@ -27,6 +27,8 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.StreamJoined;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Map;
@@ -41,6 +43,7 @@ import java.util.concurrent.CountDownLatch;
  * happened in the same time window.
  */
 public class Main {
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     public static final String BOOTSTRAP_SERVERS = "localhost:9092";
     public static final String USER_PROFILE_TOPIC = "clicks.user.profile";
     public static final String PAGE_VIEW_TOPIC = "clicks.pages.views";
@@ -77,7 +80,7 @@ public class Main {
         userActivityStream.to(USER_ACTIVITY_TOPIC, Produced.with(Serdes.Integer(), new UserActivitySerde()));
 
         Topology topology = builder.build();
-        System.out.println(topology.describe().toString());
+        LOG.info("Topology description:\n{}", topology.describe().toString());
         KafkaStreams streams = createKafkaStreams(topology);
         streams.setUncaughtExceptionHandler(new MyUncaughtExceptionHandler());
 
@@ -85,7 +88,7 @@ public class Main {
         Runtime.getRuntime().addShutdownHook(new Thread("shutdown-hook") {
             @Override
             public void run() {
-                System.out.println("Shutting down");
+                LOG.info("Shutting down");
                 streams.close(Duration.ofSeconds(10));
                 latch.countDown();
             }
@@ -94,10 +97,10 @@ public class Main {
         try {
             streams.cleanUp();
             streams.start();
-            System.out.println("Application started, type Ctrl+C to stop");
+            LOG.info("Application started, type Ctrl+C to stop");
             latch.await();
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOG.error("Unexpected error: {}", e.getMessage(), e);
         }
     }
 

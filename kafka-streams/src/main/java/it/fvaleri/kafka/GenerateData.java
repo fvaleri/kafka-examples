@@ -10,16 +10,19 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class GenerateData {
+    private static final Logger LOG = LoggerFactory.getLogger(GenerateData.class);
     public static KafkaProducer<Integer, String> producerInstance = null;
 
     public static void main(String[] args) throws Exception {
-        System.out.println("Generating fake data");
+        LOG.info("Generating fake data");
         List<ProducerRecord<Integer, String>> records = new ArrayList<>();
         Gson gson = new Gson();
 
@@ -52,11 +55,10 @@ public class GenerateData {
             records.add(new ProducerRecord<>(Main.PAGE_VIEW_TOPIC, view2.getUserId(), gson.toJson(view2)));
 
             for (ProducerRecord<Integer, String> record : records) {
-                System.out.printf("Sending record with key %d to topic %s%n", record.key(), record.topic());
+                LOG.info("Sending record with key {} to topic {}", record.key(), record.topic());
                 producer.send(record, (RecordMetadata r, Exception e) -> {
                     if (e != null) {
-                        System.err.printf("Error producing to topic %s%n", r.topic());
-                        e.printStackTrace();
+                        LOG.error("Error producing to topic {}: {}", r.topic(), e.getMessage(), e);
                     }
                 });
             }
@@ -80,16 +82,15 @@ public class GenerateData {
             records.add(new ProducerRecord<>(Main.PAGE_VIEW_TOPIC, view5.getUserId(), gson.toJson(view5)));
 
             for (ProducerRecord<Integer, String> record : records) {
-                System.out.printf("Sending record with key %d to topic %s%n", record.key(), record.topic());
+                LOG.info("Sending record with key {} to topic {}", record.key(), record.topic());
                 producer.send(record, (RecordMetadata r, Exception e) -> {
                     if (e != null) {
-                        System.err.printf("Error producing to topic %s%n", r.topic());
-                        e.printStackTrace();
+                        LOG.error("Error producing to topic {}: {}", r.topic(), e.getMessage(), e);
                     }
                 });
             }
         }
-        System.out.println("DONE");
+        LOG.info("DONE");
     }
 
     static java.util.Properties createConfig() {

@@ -6,6 +6,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaShareConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Properties;
@@ -14,6 +16,8 @@ import java.util.UUID;
 import static java.util.Collections.singleton;
 
 public class Main {
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+
     public static void main(String[] args) {
         try (var consumer = createKafkaShareConsumer()) {
             // subscribe to a topic, joining the share group
@@ -23,7 +27,7 @@ public class Main {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
                 for (ConsumerRecord<String, String> record : records) {
                     try {
-                        System.out.printf("Got %s%n", record.value().length() > 5
+                        LOG.info("Got {}", record.value().length() > 5
                                 ? record.value().substring(0, 6) + "..." : record.value());
                         consumer.acknowledge(record, AcknowledgeType.ACCEPT);
                     } catch (Exception e) {
@@ -35,7 +39,7 @@ public class Main {
                 consumer.commitSync();
             }
         } catch (Throwable e) {
-            System.err.printf("%s%n", e);
+            LOG.error("Unhandled exception", e);
         }
     }
 

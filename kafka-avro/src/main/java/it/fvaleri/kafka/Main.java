@@ -24,6 +24,8 @@ import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,6 +43,7 @@ import static java.lang.String.format;
 import static java.util.Collections.singleton;
 
 public class Main {
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static String bootstrapServers;
     private static String registryUrl;
     private static String topicName;
@@ -73,11 +76,11 @@ public class Main {
             try (InputStream latestArtifact = client.getLatestArtifact(artifactGroup, format("%s-value", topicName))) {
                 schemaData = toString(latestArtifact);
             } catch (NotFoundException e) {
-                System.err.println("Schema not registered");
+                LOG.error("Schema not registered");
                 System.exit(1);
             }
 
-            System.out.println("Producing records");
+            LOG.info("Producing records");
             Schema schema = new Schema.Parser().parse(schemaData);
             for (int i = 0; i < 5; i++) {
                 // we use the generic record instead of generating classes from the schema
@@ -87,23 +90,23 @@ public class Main {
                 ProducerRecord<String, GenericRecord> producedRecord = new ProducerRecord<>(topicName, null, record);
                 producer.send(producedRecord);
             }
-            System.out.println("Records produced");
+            LOG.info("Records produced");
 
-            System.out.println("Consuming all records");
+            LOG.info("Consuming all records");
             consumer.subscribe(singleton(topicName));
             while (true) {
                 // the globalId is sent with the payload and used to lookup the schema
                 ConsumerRecords<String, GenericRecord> records = consumer.poll(Duration.ofSeconds(5));
                 records.forEach(record -> {
                     GenericRecord value = record.value();
-                    System.out.printf("Record: %s-%d%n", value.get("Message"), value.get("Time"));
+                    LOG.info("Record: {}-{}", value.get("Message"), value.get("Time"));
                 });
                 if (records.count() > 0) {
                     break;
                 }
             }
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOG.error("Unexpected error: {}", e.getMessage(), e);
         }
     }
 
@@ -149,7 +152,7 @@ public class Main {
                 .collect(Collectors.toList());
             try {
                 admin.createTopics(newTopics).all().get();
-                System.out.printf("Created topics: %s%n", Arrays.toString(topicNames));
+                LOG.info("Created topics: {}", Arrays.toString(topicNames));
             } catch (ExecutionException e) {
                 if (!(e.getCause() instanceof TopicExistsException)) {
                     throw e;

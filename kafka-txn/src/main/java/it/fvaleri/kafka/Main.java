@@ -24,6 +24,8 @@ import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.errors.UnsupportedVersionException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +42,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 
 public class Main {
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static final int MAX_RETRIES = 5;
     
     private static String bootstrapServers, groupId, instanceId, inputTopic, outputTopic;
@@ -65,7 +68,7 @@ public class Main {
 
     public static void main(String[] args) {
         int retries = 0;
-        System.out.printf("Starting instance %s%n", instanceId);
+        LOG.info("Starting instance {}", instanceId);
         try (var producer = createKafkaProducer();
              var consumer = createKafkaConsumer()) {
             createTopics(inputTopic, outputTopic);
@@ -76,13 +79,13 @@ public class Main {
             
             while (!closed) {
                 try {
-                    System.out.println("Waiting for new data");
+                    LOG.info("Waiting for new data");
                     ConsumerRecords<String, String> records = consumer.poll(ofSeconds(30));
                     if (!records.isEmpty()) {
                         // begin a new transaction session
                         producer.beginTransaction();
 
-                        System.out.println("Processing records and sending downstream");
+                        LOG.info("Processing records and sending downstream");
                         for (ConsumerRecord<String, String> record : records) {
                             String newValue = new StringBuilder(record.value()).reverse().toString();
                             ProducerRecord<String, String> newRecord =
@@ -105,7 +108,7 @@ public class Main {
                     closed = true;
                 } catch (OffsetOutOfRangeException | NoOffsetForPartitionException e) {
                     // invalid or no offset found without auto.reset.policy
-                    System.out.println("Invalid or no offset found, using latest");
+                    LOG.warn("Invalid or no offset found, using latest");
                     consumer.seekToEnd(e.partitions());
                     consumer.commitSync();
                     retries = 0;
@@ -113,13 +116,13 @@ public class Main {
                     // abort the transaction and continue
                     // in a real world application you would need to send these 
                     // records to a DLT (dead letter topic) for further processing
-                    System.err.printf("Aborting transaction: %s%n", e);
+                    LOG.error("Aborting transaction: {}", e.getMessage());
                     producer.abortTransaction();
                     retries = maybeRetry(retries, consumer);
                 }
             }
         } catch (Throwable e) {
-            System.err.printf("%s%n", e);
+            LOG.error("Unexpected error: {}", e.getMessage(), e);
         }
     }
 
@@ -173,7 +176,7 @@ public class Main {
                 .collect(Collectors.toList());
             try {
                 admin.createTopics(newTopics).all().get();
-                System.out.printf("Created topics: %s%n", Arrays.toString(topicNames));
+                LOG.info("Created topics: {}", Arrays.toString(topicNames));
             } catch (ExecutionException e) {
                 if (!(e.getCause() instanceof TopicExistsException)) {
                     throw e;
@@ -195,7 +198,7 @@ public class Main {
      */
     private static int maybeRetry(int retries, KafkaConsumer<String, String> consumer) {
         if (retries < 0) {
-            System.err.println("The number of retries must be greater than zero");
+            LOG.error("The number of retries must be greater than zero");
             closed = true;
         }
 
@@ -215,7 +218,7 @@ public class Main {
         } else {
             // continue: skip records
             // the consumer fetch position needs to be committed as if records were processed successfully
-            System.err.printf("Skipping records after %d retries%n", MAX_RETRIES);
+            LOG.error("Skipping records after {} retries", MAX_RETRIES);
             consumer.commitSync();
             retries = 0;
         }

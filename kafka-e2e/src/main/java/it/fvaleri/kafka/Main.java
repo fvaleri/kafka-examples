@@ -16,6 +16,8 @@ import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -29,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static final String BOOTSTRAP_SERVERS = "localhost:9092";
     private static final int NUMBER_OF_MESSAGES = 50_000;
     private static final int MESSAGE_SENDING_INTERVAL_MILLIS = 1;
@@ -71,14 +74,13 @@ public class Main {
                 executorService.execute(() -> receiveMessages(kafkaConsumer, shutdown));
                 stopExecutor(executorService);
 
-                System.out.println("50th percentile: " + HISTOGRAM.getValueAtPercentile(50) / 1_000 + " us");
-                System.out.println("90th percentile: " + HISTOGRAM.getValueAtPercentile(90) / 1_000 + " us");
-                System.out.println("99th percentile: " + HISTOGRAM.getValueAtPercentile(99) / 1_000 + " us");
-                System.out.println("99.9th percentile: " + HISTOGRAM.getValueAtPercentile(99.9) / 1_000 + " us");
+                LOG.info("50th percentile: {} us", HISTOGRAM.getValueAtPercentile(50) / 1_000);
+                LOG.info("90th percentile: {} us", HISTOGRAM.getValueAtPercentile(90) / 1_000);
+                LOG.info("99th percentile: {} us", HISTOGRAM.getValueAtPercentile(99) / 1_000);
+                LOG.info("99.9th percentile: {} us", HISTOGRAM.getValueAtPercentile(99.9) / 1_000);
             }
         } catch (Throwable e) {
-            System.err.println("Unhandled exception");
-            e.printStackTrace();
+            LOG.error("Unhandled exception", e);
         }
     }
 
@@ -86,7 +88,7 @@ public class Main {
         for (int i = 0; i < NUMBER_OF_MESSAGES; i++) {
             kafkaProducer.send(new ProducerRecord<>("test", System.nanoTime()));
             if (i % 1000 == 0) {
-                System.out.println("Sent: " + i);
+                LOG.info("Sent: {}", i);
             }
             sleep(MESSAGE_SENDING_INTERVAL_MILLIS);
         }
@@ -121,7 +123,7 @@ public class Main {
             if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
                 executor.shutdownNow();
                 if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                    System.err.println("ExecutorService did not terminate");
+                    LOG.error("ExecutorService did not terminate");
                 }
             }
         } catch (InterruptedException e) {

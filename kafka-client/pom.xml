@@ -15,6 +15,7 @@
         <main.class>it.fvaleri.kafka.Main</main.class>
         <kafka.version>4.1.0</kafka.version>
         <strimzi-oauth.version>0.16.2</strimzi-oauth.version>
+        <log4j.version>2.24.3</log4j.version>
         <plugin.compiler.version>3.14.0</plugin.compiler.version>
         <plugin.exec.version>3.5.1</plugin.exec.version>
         <plugin.jar.version>3.4.2</plugin.jar.version>
@@ -32,13 +33,16 @@
             <artifactId>kafka-oauth-client</artifactId>
             <version>${strimzi-oauth.version}</version>
         </dependency>
-        <!-- The Kafka client already includes SLF4J API,
-             so you only need the implementation. -->
-        <!--dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.36</version>
-        </dependency-->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
