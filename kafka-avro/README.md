@@ -28,7 +28,7 @@ curl -s -X POST -H "Content-Type: application/json" \
 mvn compile exec:java -q
 
 ### run on Kubernetes
-mvn package
+mvn clean package
 
 docker build -t ghcr.io/fvaleri/kafka-avro:latest .
 echo $TOKEN | docker login ghcr.io -u fvaleri --password-stdin

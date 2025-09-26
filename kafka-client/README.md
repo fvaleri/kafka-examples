@@ -4,7 +4,7 @@ NUM_MESSAGES="100" mvn compile exec:java
 CLIENT_TYPE="consumer" NUM_MESSAGES="100" mvn compile exec:java
 
 # run on Kubernetes
-mvn package
+mvn clean package
 
 docker build -t ghcr.io/fvaleri/kafka-client:latest .
 echo $TOKEN | docker login ghcr.io -u fvaleri --password-stdin

@@ -11,7 +11,7 @@ bin/kafka-console-producer.sh --bootstrap-server :9092 --topic input-topic
 bin/kafka-console-consumer.sh --bootstrap-server :9092 --topic output-topic --from-beginning
 
 # run on Kubernetes
-mvn package
+mvn clean package
 
 docker build -t ghcr.io/fvaleri/kafka-txn:latest .
 echo $TOKEN | docker login ghcr.io -u fvaleri --password-stdin

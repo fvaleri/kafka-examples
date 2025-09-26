@@ -1,21 +1,16 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM eclipse-temurin:17-jre-alpine
 
 ENV APP_HOME="/opt/example"
-ENV JAVA_VERSION="17"
-ENV JAVA_HOME="/usr/lib/jvm/jre-$JAVA_VERSION"
 ENV JAVA_OPTS="-XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 ENV JAVA_CLASSPATH="$APP_HOME/libs/*:$APP_HOME:app.jar"
 ENV TINI_VERSION="v0.19.0"
 
 USER root
 
-RUN microdnf update -y \
-    && microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y java-$JAVA_VERSION-openjdk-headless shadow-utils \
-    && microdnf clean all -y
+RUN apk --no-cache add shadow curl
 
 # add Tini
-RUN curl -skL https://github.com/krallin/tini/releases/download/$TINI_VERSION/tini-amd64 -o /usr/bin/tini \
-    && echo "93dcc18adc78c65a028a84799ecf8ad40c936fdfc5f2a57b1acda5a8117fa82c */usr/bin/tini" | sha256sum -c \
+RUN curl -fsSL https://github.com/krallin/tini/releases/download/"$TINI_VERSION"/tini-static-amd64 -o /usr/bin/tini \
     && chmod +x /usr/bin/tini
 ENTRYPOINT ["/usr/bin/tini", "-e", "143", "--"]
 
