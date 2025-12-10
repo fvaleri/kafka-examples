@@ -5,11 +5,15 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaShareConsumer;
+import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -29,14 +33,23 @@ public class Main {
                     try {
                         LOG.info("Got {}", record.value().length() > 5
                                 ? record.value().substring(0, 6) + "..." : record.value());
+                        // mark the record as processed successfully update (local state)
                         consumer.acknowledge(record, AcknowledgeType.ACCEPT);
                     } catch (Exception e) {
-                        // maybe send to a DLQ for more investigation
+                        // mark this record as unprocessable or route to a DLQ (local state)
                         consumer.acknowledge(record, AcknowledgeType.REJECT);
                     }
                 }
-                // push the acknowledgments to the brokers
-                consumer.commitSync();
+                // commit the acknowledgements of all records in the batch (brokers state)
+                Map<TopicIdPartition, Optional<KafkaException>> result = consumer.commitSync();
+                result.forEach((topicIdPartition, exception) -> {
+                    if (exception.isPresent()) {
+                        LOG.error("Failed commit for topic: {}, partition: {}, offset: N/A",
+                                topicIdPartition.topic(),
+                                topicIdPartition.partition(),
+                                exception.get());
+                    }
+                });
             }
         } catch (Throwable e) {
             LOG.error("Unhandled exception", e);

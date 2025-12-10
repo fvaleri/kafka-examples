@@ -17,7 +17,6 @@
         <log4j.version>2.24.3</log4j.version>
         <plugin.compiler.version>3.13.0</plugin.compiler.version>
         <plugin.exec.version>3.1.0</plugin.exec.version>
-        <plugin.shade.version>3.4.1</plugin.shade.version>
     </properties>
 
     <dependencies>
@@ -52,28 +51,6 @@
                 <configuration>
                     <mainClass>${main.class}</mainClass>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>${plugin.shade.version}</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>${project.artifactId}-${project.version}-run</finalName>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>${main.class}</mainClass>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
