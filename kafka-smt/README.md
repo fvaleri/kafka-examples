@@ -1,5 +1,5 @@
 ```sh
-mvn package -DskipTests
+mvn package
 cp target/kafka-smt-*.jar $PLUGINS
 
 # add to the connectors SMT chain

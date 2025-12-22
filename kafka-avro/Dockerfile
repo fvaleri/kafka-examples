@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 ENV APP_HOME="/opt/example"
 ENV JAVA_OPTS="-XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"

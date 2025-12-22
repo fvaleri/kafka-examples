@@ -11,16 +11,16 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <main.class>it.fvaleri.kafka.Main</main.class>
-        <kafka.version>4.1.0</kafka.version>
+        <kafka.version>4.1.1</kafka.version>
         <apicurio.registry.version>2.4.1.Final</apicurio.registry.version>
-        <jackson.databind.version>2.18.3</jackson.databind.version>
+        <jackson.databind.version>2.20.1</jackson.databind.version>
         <log4j.version>2.24.3</log4j.version>
-        <plugin.compiler.version>3.14.0</plugin.compiler.version>
-        <plugin.exec.version>3.5.0</plugin.exec.version>
-        <plugin.jar.version>3.4.2</plugin.jar.version>
-        <plugin.dependency.version>3.8.1</plugin.dependency.version>
+        <plugin.compiler.version>3.14.1</plugin.compiler.version>
+        <plugin.exec.version>3.6.2</plugin.exec.version>
+        <plugin.jar.version>3.5.0</plugin.jar.version>
+        <plugin.dependency.version>3.9.0</plugin.dependency.version>
     </properties>
 
     <dependencies>
