@@ -1,16 +1,11 @@
 package it.fvaleri.kafka;
 
-import io.apicurio.registry.rest.client.RegistryClient;
-import io.apicurio.registry.rest.client.RegistryClientFactory;
-import io.apicurio.registry.rest.client.exception.NotFoundException;
-import io.apicurio.registry.serde.SerdeConfig;
 import io.apicurio.registry.serde.avro.AvroKafkaDeserializer;
 import io.apicurio.registry.serde.avro.AvroKafkaSerializer;
-import io.apicurio.registry.serde.strategy.TopicIdStrategy;
+import io.apicurio.registry.serde.config.SerdeConfig;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -20,36 +15,28 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-
-import static java.lang.String.format;
-import static java.util.Collections.singleton;
 
 public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static String bootstrapServers;
     private static String registryUrl;
     private static String topicName;
-    private static String artifactGroup;
-    private static String sslTruststoreLocation;
-    private static String sslTruststorePassword;
 
     static {
         if (System.getenv("BOOTSTRAP_SERVERS") != null) {
@@ -57,9 +44,6 @@ public class Main {
         }
         if (System.getenv("REGISTRY_URL") != null) {
             registryUrl = System.getenv("REGISTRY_URL");
-        }
-        if (System.getenv("ARTIFACT_GROUP") != null) {
-            artifactGroup = System.getenv("ARTIFACT_GROUP");
         }
         if (System.getenv("TOPIC_NAME") != null) {
             topicName = System.getenv("TOPIC_NAME");
@@ -70,41 +54,23 @@ public class Main {
         try (var producer = createKafkaProducer();
              var consumer = createKafkaConsumer()) {
             createTopics(topicName);
-            // get the schema by group and id
-            RegistryClient client = RegistryClientFactory.create(registryUrl);
-            String schemaData = null;
-            try (InputStream latestArtifact = client.getLatestArtifact(artifactGroup, format("%s-value", topicName))) {
-                schemaData = toString(latestArtifact);
-            } catch (NotFoundException e) {
-                LOG.error("Schema not registered");
-                System.exit(1);
-            }
+            Schema schema = loadSchemaFromFile("greeting-v1.avsc");
 
             LOG.info("Producing records");
-            Schema schema = new Schema.Parser().parse(schemaData);
             for (int i = 0; i < 5; i++) {
                 // we use the generic record instead of generating classes from the schema
                 GenericRecord record = new GenericData.Record(schema);
                 record.put("Message", "Hello");
                 record.put("Time", System.currentTimeMillis());
-                ProducerRecord<String, GenericRecord> producedRecord = new ProducerRecord<>(topicName, null, record);
-                producer.send(producedRecord);
+                producer.send(new ProducerRecord<>(topicName, null, record));
             }
-            LOG.info("Records produced");
 
-            LOG.info("Consuming all records");
-            consumer.subscribe(singleton(topicName));
-            while (true) {
-                // the globalId is sent with the payload and used to lookup the schema
-                ConsumerRecords<String, GenericRecord> records = consumer.poll(Duration.ofSeconds(5));
-                records.forEach(record -> {
-                    GenericRecord value = record.value();
-                    LOG.info("Record: {}-{}", value.get("Message"), value.get("Time"));
-                });
-                if (records.count() > 0) {
-                    break;
-                }
-            }
+            LOG.info("Consuming records");
+            consumer.subscribe(Set.of(topicName));
+            // the deserializer extracts the globalId from payload and uses it to look up the schema
+            ConsumerRecords<String, GenericRecord> records = consumer.poll(Duration.ofSeconds(5));
+            records.forEach(record
+                    -> LOG.info("Record: {}-{}", record.value().get("Message"), record.value().get("Time")));
         } catch (Throwable e) {
             LOG.error("Unexpected error: {}", e.getMessage(), e);
         }
@@ -117,10 +83,8 @@ public class Main {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, AvroKafkaSerializer.class.getName());
         props.put(SerdeConfig.REGISTRY_URL, registryUrl);
-        // this configures the cache eviction period
+        // this configures the schema cache eviction period
         props.putIfAbsent(SerdeConfig.CHECK_PERIOD_MS, 30_000);
-        // set the artifactId lookup strategy (map the topic name to the artifactId in the registry)
-        props.putIfAbsent(SerdeConfig.ARTIFACT_RESOLVER_STRATEGY, TopicIdStrategy.class.getName());
         return new KafkaProducer<>(props);
     }
 
@@ -133,10 +97,8 @@ public class Main {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());
         props.put(SerdeConfig.REGISTRY_URL, registryUrl);
-        // this configures the cache eviction period
+        // this configures the schema cache eviction period
         props.putIfAbsent(SerdeConfig.CHECK_PERIOD_MS, 30_000);
-        // set the artifactId lookup strategy (map the topic name to the artifactId in the registry)
-        props.putIfAbsent(SerdeConfig.ARTIFACT_RESOLVER_STRATEGY, TopicIdStrategy.class.getName());
         return new KafkaConsumer<>(props);
     }
 
@@ -163,13 +125,18 @@ public class Main {
         }
     }
 
-    private static String toString(InputStream data) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buff = new byte[64];
-        int count;
-        while ((count = data.read(buff)) != -1) {
-            baos.write(buff, 0, count);
+    private static Schema loadSchemaFromFile(String fileName) {
+        LOG.info("Loading schema from file: {}", fileName);
+        try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream(fileName)) {
+            if (inputStream == null) {
+                LOG.error("Schema file not found: {}", fileName);
+                System.exit(1);
+            }
+            return new Schema.Parser().parse(inputStream);
+        } catch (IOException e) {
+            LOG.error("Error loading schema from file: {}", e.getMessage(), e);
+            System.exit(1);
         }
-        return new String(baos.toByteArray(), StandardCharsets.UTF_8);
+        return null;
     }
 }

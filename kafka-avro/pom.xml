@@ -14,8 +14,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <main.class>it.fvaleri.kafka.Main</main.class>
         <kafka.version>4.1.1</kafka.version>
-        <apicurio.registry.version>2.4.1.Final</apicurio.registry.version>
-        <jackson.databind.version>2.20.1</jackson.databind.version>
+        <apicurio.registry.version>3.1.6</apicurio.registry.version>
         <log4j.version>2.24.3</log4j.version>
         <plugin.compiler.version>3.14.1</plugin.compiler.version>
         <plugin.exec.version>3.6.2</plugin.exec.version>
@@ -31,32 +30,8 @@
         </dependency>
         <dependency>
             <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-client</artifactId>
+            <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
             <version>${apicurio.registry.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jboss.slf4j</groupId>
-                    <artifactId>slf4j-jboss-logmanager</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.logging</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.code</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
-            <version>${apicurio.registry.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.databind.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -121,39 +96,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- 
-                Register the artifact at build time.
-                The artifact `id` convention for the mapping is to combine the topic name with the key or value, 
-                depending on whether the serializer is used for the message key or value. The generated `globalId` 
-                is then stored in the message headers and used to lookup the schema when consuming messages. 
-                Different schema `version`s use the same artifact `id`, but have different `globalId`s.
-            -->
-            <!--plugin>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-maven-plugin</artifactId>
-                <version>${apicurio.registry.version}</version>
-                <executions>
-                    <execution>
-                        <id>register-artifact</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>register</goal>
-                        </goals>
-                        <configuration>
-                            <registryUrl>${env.REGISTRY_URL}</registryUrl>
-                            <artifacts>
-                                <artifact>
-                                    <groupId>${env.ARTIFACT_GROUP}</groupId>
-                                    <artifactId>${env.TOPIC_NAME}-value</artifactId>
-                                    <file>${project.basedir}/src/main/resources/greeting.avsc</file>
-                                    <type>AVRO</type>
-                                    <ifExists>RETURN_OR_UPDATE</ifExists>
-                                </artifact>
-                            </artifacts>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin-->
         </plugins>
     </build>
 

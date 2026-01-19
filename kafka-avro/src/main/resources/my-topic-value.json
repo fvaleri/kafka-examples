@@ -1,0 +1,10 @@
+{
+    "artifactId": "my-topic-value",
+    "artifactType": "AVRO",
+    "firstVersion": {
+        "content": {
+            "content": "{\"type\":\"record\",\"name\":\"Greeting\",\"fields\":[{\"name\":\"Message\",\"type\":\"string\"},{\"name\":\"Time\",\"type\":\"long\"}]}",
+            "contentType": "application/json"
+        }
+    }
+}
