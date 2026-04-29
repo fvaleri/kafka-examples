@@ -13,10 +13,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <main.class>it.fvaleri.kafka.Main</main.class>
-        <kafka.version>4.1.0</kafka.version>
-        <log4j.version>2.24.3</log4j.version>
-        <plugin.compiler.version>3.13.0</plugin.compiler.version>
-        <plugin.exec.version>3.1.0</plugin.exec.version>
+        <kafka.version>4.2.0</kafka.version>
+        <log4j.version>2.25.4</log4j.version>
+        <plugin.compiler.version>3.15.0</plugin.compiler.version>
+        <plugin.exec.version>3.6.3</plugin.exec.version>
     </properties>
 
     <dependencies>

@@ -12,10 +12,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>21</maven.compiler.release>
-        <kafka.version>4.1.0</kafka.version>
-        <json.version>20250517</json.version>
-        <plugin.compiler.version>3.14.1</plugin.compiler.version>
-        <plugin.shade.version>3.6.1</plugin.shade.version>
+        <kafka.version>4.2.0</kafka.version>
+        <json.version>20251224</json.version>
+        <plugin.compiler.version>3.15.0</plugin.compiler.version>
+        <plugin.shade.version>3.6.2</plugin.shade.version>
     </properties>
 
     <dependencies>
@@ -57,6 +57,14 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>
