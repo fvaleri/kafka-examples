@@ -1,8 +1,4 @@
 ```sh
-# enable the feature
-echo "group.coordinator.rebalance.protocols=classic,consumer,share" >> config/server.properties
-bin/kafka-features.sh --bootstrap-server :9092 upgrade --feature share.version=1
-
 # create a test topic and send some messages
 bin/kafka-topics.sh --bootstrap-server :9092 --create --topic my-topic --partitions 1
 
