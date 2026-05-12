@@ -1,6 +1,6 @@
 ```sh
 # build the project
-mvn package
+mvn clean package
 
 # generate fake data
 java -cp target/kafka-streams-*-run.jar it.fvaleri.kafka.GenerateData

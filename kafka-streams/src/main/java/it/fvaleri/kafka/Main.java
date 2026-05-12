@@ -25,6 +25,7 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.StreamJoined;
 import org.slf4j.Logger;
@@ -53,7 +54,8 @@ public class Main {
     public static void main(String[] args) {
         StreamsBuilder builder = new StreamsBuilder();
         KStream<Integer, PageView> views = builder.stream(PAGE_VIEW_TOPIC, Consumed.with(Serdes.Integer(), new PageViewSerde()));
-        KTable<Integer, UserProfile> profiles = builder.table(USER_PROFILE_TOPIC, Consumed.with(Serdes.Integer(), new ProfileSerde()));
+        KTable<Integer, UserProfile> profiles = builder.table(USER_PROFILE_TOPIC,
+                Consumed.with(Serdes.Integer(), new ProfileSerde()), Materialized.as("user-profile-store"));
         KStream<Integer, Search> searches = builder.stream(SEARCH_TOPIC, Consumed.with(Serdes.Integer(), new SearchSerde()));
 
         KStream<Integer, UserActivity> viewsWithProfile = views.leftJoin(profiles,
@@ -75,7 +77,8 @@ public class Main {
                     return userActivity;
                 },
                 JoinWindows.ofTimeDifferenceWithNoGrace(Duration.ofSeconds(1)),
-                StreamJoined.with(Serdes.Integer(), new UserActivitySerde(), new SearchSerde()));
+                StreamJoined.with(Serdes.Integer(), new UserActivitySerde(), new SearchSerde())
+                        .withStoreName("user-activity-join"));
 
         userActivityStream.to(USER_ACTIVITY_TOPIC, Produced.with(Serdes.Integer(), new UserActivitySerde()));
 
@@ -124,6 +127,8 @@ public class Main {
         // serde exception handlers
         props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, MyDeserializationErrorHandler.class);
         props.put(StreamsConfig.PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, MyProductionExceptionHandler.class);
+        props.put(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_GLOBAL_ENABLED_CONFIG, true);
+        props.put(StreamsConfig.STATE_DIR_CONFIG, "target/state-dir");
         // reconnections and retries
         props.put(StreamsConfig.RECONNECT_BACKOFF_MS_CONFIG, 50);
         props.put(StreamsConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG, 1_000);

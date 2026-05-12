@@ -93,6 +93,7 @@ public class Main {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "client-" + UUID.randomUUID());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "my-group");
+        props.put(ConsumerConfig.GROUP_PROTOCOL_CONFIG, "consumer");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());

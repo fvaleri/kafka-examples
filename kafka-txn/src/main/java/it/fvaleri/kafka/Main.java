@@ -38,7 +38,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static java.time.Duration.ofSeconds;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 
 public class Main {
@@ -148,6 +147,7 @@ public class Main {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.GROUP_PROTOCOL_CONFIG, "consumer");
         // consumer can set groupInstanceId to avoid unnecessary rebalances
         props.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, instanceId);
         // all records are fetched with read_committed but ongoing and aborted transactions are ignored

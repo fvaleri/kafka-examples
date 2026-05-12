@@ -60,6 +60,7 @@ public class Main {
             consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
             consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString());
             consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+            consumerProps.put(ConsumerConfig.GROUP_PROTOCOL_CONFIG, "consumer");
             // set group.coordinator.append.linger.ms=0 on brokers to minimize e2e latency with low throughput
 
             try (final KafkaProducer<String, Long> kafkaProducer = new KafkaProducer<>(producerProps);

@@ -2,7 +2,7 @@
 # create a test topic and send some messages
 bin/kafka-topics.sh --bootstrap-server :9092 --create --topic my-topic --partitions 1
 
-# run the example in two different shells
+# run the example
 mvn compile exec:java
 
 # check share groups
@@ -10,6 +10,6 @@ bin/kafka-share-groups.sh --bootstrap-server :9092 --describe --group my-share-g
 bin/kafka-share-groups.sh --bootstrap-server :9092 --describe --group my-share-group --members
 
 # send some messages
-bin/kafka-producer-perf-test.sh --producer-props bootstrap.servers=:9092 linger.ms=0 batch.size=10000 \
+bin/kafka-producer-perf-test.sh --command-property bootstrap.servers=:9092 linger.ms=0 batch.size=10000 \
   --topic my-topic --throughput 5 --payload-monotonic --num-records 1000
 ```
