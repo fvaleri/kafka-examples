@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import org.apache.kafka.connect.header.Header;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -33,53 +32,28 @@ public class EchoSinkTask extends SinkTask {
             LOG.warn("Failed to parse {}. The task will not fail intentionally.", EchoSinkConnector.FAIL_TASK_AFTER_RECORDS_CONFIG, e);
         }
 
-        Level logLevel = Level.INFO;
+        var logLevel = Level.INFO;
         try {
             logLevel = Level.valueOf(props.get(EchoSinkConnector.LEVEL_CONFIG));
         } catch (Throwable e) {
             LOG.warn("Failed to decode log level {}. Default log level INFO will be used.", props.get(EchoSinkConnector.LEVEL_CONFIG));
         }
 
-        switch (logLevel) {
-            case INFO:
-                logOnLevel = (key, value) -> {
-                    LOG.info("Received message with key '{}' and value '{}'", key, value);
-                    return null;
-                };
-                break;
-            case ERROR:
-                logOnLevel = (key, value) -> {
-                    LOG.error("Received message with key '{}' and value '{}'", key, value);
-                    return null;
-                };
-                break;
-            case WARN:
-                logOnLevel = (key, value) -> {
-                    LOG.warn("Received message with key '{}' and value '{}'", key, value);
-                    return null;
-                };
-                break;
-            case DEBUG:
-                logOnLevel = (key, value) -> {
-                    LOG.debug("Received message with key '{}' and value '{}'", key, value);
-                    return null;
-                };
-                break;
-            case TRACE:
-                logOnLevel = (key, value) -> {
-                    LOG.trace("Received message with key '{}' and value '{}'", key, value);
-                    return null;
-                };
-                break;
-        }
+        logOnLevel = switch (logLevel) {
+            case INFO -> (key, value) -> { LOG.info("Received message with key '{}' and value '{}'", key, value); return null; };
+            case ERROR -> (key, value) -> { LOG.error("Received message with key '{}' and value '{}'", key, value); return null; };
+            case WARN -> (key, value) -> { LOG.warn("Received message with key '{}' and value '{}'", key, value); return null; };
+            case DEBUG -> (key, value) -> { LOG.debug("Received message with key '{}' and value '{}'", key, value); return null; };
+            case TRACE -> (key, value) -> { LOG.trace("Received message with key '{}' and value '{}'", key, value); return null; };
+        };
     }
 
     // the main logic is here
     @Override
     public void put(Collection<SinkRecord> sinkRecords) {
-        for (SinkRecord record : sinkRecords) {
-            Map<String, String> headers = new HashMap<>();
-            for (Header header : record.headers()) {
+        for (var record : sinkRecords) {
+            var headers = new HashMap<String, String>();
+            for (var header : record.headers()) {
                 headers.put(header.key(), header.value().toString());
             }
 

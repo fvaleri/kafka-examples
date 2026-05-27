@@ -2,18 +2,12 @@ package it.fvaleri.kafka;
 
 import org.apache.kafka.clients.consumer.AcknowledgeType;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaShareConsumer;
-import org.apache.kafka.common.KafkaException;
-import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -28,8 +22,8 @@ public class Main {
             consumer.subscribe(singleton("my-topic"));
             while (true) {
                 // poll RELEASE any unacknowledged records from the previous poll
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
-                for (ConsumerRecord<String, String> record : records) {
+                var records = consumer.poll(Duration.ofMillis(100));
+                for (var record : records) {
                     try {
                         LOG.info("Got {}", record.value().length() > 5
                                 ? record.value().substring(0, 6) + "..." : record.value());
@@ -41,7 +35,7 @@ public class Main {
                     }
                 }
                 // commit the acknowledgements of all records in the batch (brokers state)
-                Map<TopicIdPartition, Optional<KafkaException>> result = consumer.commitSync();
+                var result = consumer.commitSync();
                 result.forEach((topicIdPartition, exception) -> {
                     if (exception.isPresent()) {
                         LOG.error("Failed commit for topic: {}, partition: {}, offset: N/A",
@@ -57,7 +51,7 @@ public class Main {
     }
 
     private static KafkaShareConsumer<String, String> createKafkaShareConsumer() {
-        Properties props = new Properties();
+        var props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "client-" + UUID.randomUUID());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);

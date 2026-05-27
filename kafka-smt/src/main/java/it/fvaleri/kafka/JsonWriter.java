@@ -24,11 +24,11 @@ public class JsonWriter<R extends ConnectRecord<R>> implements Transformation<R>
     public R apply(R record) {
         LOG.debug("Input record: {}", record.value());
         // change event filtering and flattening
-        JSONObject value = new JSONObject(record.value().toString());
-        String op = (String) value.getString("op");
+        var value = new JSONObject(record.value().toString());
+        var op = value.getString("op");
         LOG.debug("Operation: {}", op);
         if (op != null && "cru".contains(op)) {
-            JSONObject newValue = value.getJSONObject("after");
+            var newValue = value.getJSONObject("after");
             return record.newRecord(
                 record.topic(), record.kafkaPartition(),
                 null, null,

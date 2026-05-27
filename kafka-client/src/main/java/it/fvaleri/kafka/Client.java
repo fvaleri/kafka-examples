@@ -6,7 +6,6 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
-import org.apache.kafka.common.errors.RebalanceInProgressException;
 import org.apache.kafka.common.errors.RetriableException;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.errors.UnsupportedVersionException;
@@ -16,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
@@ -24,14 +22,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
-import static java.lang.String.format;
-
-public abstract class Client extends Thread {
+public sealed abstract class Client extends Thread permits Producer, Consumer {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     private static final Random RND = new Random(0);
 
+    protected final Configuration config = Configuration.get();
     protected AtomicLong messageCount = new AtomicLong(0);
     protected AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -80,50 +76,37 @@ public abstract class Client extends Thread {
         }
     }
 
-    // the API is evolving, so this method does not include all fatal errors
-    // additionally, you may want to add your business logic errors
     boolean retriable(Exception e) {
-        if (e == null) {
-            return false;
-        } else if (e instanceof IllegalArgumentException
+        if (e instanceof IllegalArgumentException
             || e instanceof UnsupportedOperationException
-            || e instanceof UnsupportedVersionException
-            || !(e instanceof RebalanceInProgressException)
-            || !(e instanceof RetriableException)) {
-            // non retriable exception
+            || e instanceof UnsupportedVersionException) {
             return false;
-        } else {
-            // retriable
-            return true;
         }
+        return e instanceof RetriableException;
     }
 
     byte[] randomBytes(int size) {
         if (size <= 0) {
             throw new IllegalArgumentException("Record size must be greater than zero");
         }
-        byte[] payload = new byte[size];
-        for (int i = 0; i < payload.length; ++i) {
-            payload[i] = (byte) (RND.nextInt(26) + 65);
-        }
-        return payload;
+        return new String(RND.ints(size, 'A', 'Z' + 1).toArray(), 0, size).getBytes();
     }
 
     void createTopics(String... topicNames) {
         // use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
-        createTopics(Configuration.BOOTSTRAP_SERVERS, -1, -1, topicNames);
+        createTopics(config.bootstrapServers(), -1, -1, topicNames);
     }
 
     void createTopics(String bootstrapServers, int numPartitions, int replicationFactor, String... topicNames) {
-        Properties props = new Properties();
+        var props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(AdminClientConfig.CLIENT_ID_CONFIG, "client" + UUID.randomUUID());
-        addConfig(props, Configuration.ADMIN_CONFIG);
+        addConfig(props, config.adminConfig());
         addSecurityConfig(props);
-        try (Admin admin = Admin.create(props)) {
-            List<NewTopic> newTopics = Arrays.stream(topicNames)
+        try (var admin = Admin.create(props)) {
+            var newTopics = Arrays.stream(topicNames)
                 .map(name -> new NewTopic(name, numPartitions, (short) replicationFactor))
-                .collect(Collectors.toList());
+                .toList();
             try {
                 admin.createTopics(newTopics).all().get();
                 LOG.info("Created topics: {}", Arrays.toString(topicNames));
@@ -138,7 +121,7 @@ public abstract class Client extends Thread {
     }
 
     void addConfig(Properties props, String config) {
-        Properties addProps = new Properties();
+        var addProps = new Properties();
         if (config != null)   {
             try {
                 props.load(new StringReader(config.replace(",", "\n")));
@@ -150,86 +133,75 @@ public abstract class Client extends Thread {
     }
     
     void addSecurityConfig(Properties props) {
-        props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, Configuration.SECURITY_PROTOCOL);
-        if (Configuration.SSL_HOSTNAME_VERIFICATION)   {
-            props.put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "HTTPS");
-        } else {
-            props.put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
-        }
-        if (Configuration.SSL_TRUSTSTORE_TYPE != null) {
-            props.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, Configuration.SSL_TRUSTSTORE_TYPE);
-            switch (Configuration.SSL_TRUSTSTORE_TYPE) {
-                case "PEM":
-                    props.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, Configuration.SSL_TRUSTSTORE_CERTIFICATES);
-                    break;
-                case "PKCS12":
-                case "JKS":
-                    props.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, Configuration.SSL_TRUSTSTORE_LOCATION);
-                    props.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, Configuration.SSL_TRUSTSTORE_PASSWORD);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported truststore type");
+        props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, config.securityProtocol());
+        props.put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG,
+            config.sslHostnameVerification() ? "HTTPS" : "");
+        if (config.sslTruststoreType() != null) {
+            props.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, config.sslTruststoreType());
+            switch (config.sslTruststoreType()) {
+                case "PEM" -> props.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, config.sslTruststoreCertificates());
+                case "PKCS12", "JKS" -> {
+                    props.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, config.sslTruststoreLocation());
+                    props.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, config.sslTruststorePassword());
+                }
+                default -> throw new IllegalArgumentException("Unsupported truststore type");
             }
         }
-        if (Configuration.SSL_KEYSTORE_TYPE != null) {
-            props.put(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, Configuration.SSL_KEYSTORE_TYPE);
-            switch (Configuration.SSL_KEYSTORE_TYPE) {
-                case "PEM":
-                    props.put(SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG, Configuration.SSL_KEYSTORE_CERTIFICATE_CHAIN);
-                    props.put(SslConfigs.SSL_KEYSTORE_KEY_CONFIG, Configuration.SSL_KEYSTORE_KEY);
-                    break;
-                case "PKCS12":
-                case "JKS":
-                    props.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, Configuration.SSL_KEYSTORE_LOCATION);
-                    props.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, Configuration.SSL_KEYSTORE_PASSWORD);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported keystore type");
+        if (config.sslKeystoreType() != null) {
+            props.put(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, config.sslKeystoreType());
+            switch (config.sslKeystoreType()) {
+                case "PEM" -> {
+                    props.put(SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG, config.sslKeystoreCertificateChain());
+                    props.put(SslConfigs.SSL_KEYSTORE_KEY_CONFIG, config.sslKeystoreKey());
+                }
+                case "PKCS12", "JKS" -> {
+                    props.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, config.sslKeystoreLocation());
+                    props.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, config.sslKeystorePassword());
+                }
+                default -> throw new IllegalArgumentException("Unsupported keystore type");
             }
         }
-        if (Configuration.SASL_MECHANISM != null) {
-            props.put(SaslConfigs.SASL_MECHANISM, Configuration.SASL_MECHANISM);
-            switch (Configuration.SASL_MECHANISM) {
-                case "PLAIN":
-                    props.put(SaslConfigs.SASL_JAAS_CONFIG, getSaslPlainJaasConfig());
-                    break;
-                case "SCRAM-SHA-512":
-                    props.put(SaslConfigs.SASL_JAAS_CONFIG, getSaslScramJaasConfig());
-                    break;
-                case "OAUTHBEARER":
+        if (config.saslMechanism() != null) {
+            props.put(SaslConfigs.SASL_MECHANISM, config.saslMechanism());
+            switch (config.saslMechanism()) {
+                case "PLAIN" -> props.put(SaslConfigs.SASL_JAAS_CONFIG, getSaslPlainJaasConfig());
+                case "SCRAM-SHA-512" -> props.put(SaslConfigs.SASL_JAAS_CONFIG, getSaslScramJaasConfig());
+                case "OAUTHBEARER" -> {
                     props.put(SaslConfigs.SASL_JAAS_CONFIG, getSaslOauthJaasConfig());
                     props.put(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS,
                         "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported SASL mechanism");
+                }
+                default -> throw new IllegalArgumentException("Unsupported SASL mechanism");
             }
         }
     }
 
     String getSaslPlainJaasConfig() {
-        String jaasConfig = format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-            "username=\"%s\" password=\"%s\";", Configuration.SASL_USERNAME, Configuration.SASL_PASSWORD);
-        return jaasConfig;
+        return """
+            org.apache.kafka.common.security.plain.PlainLoginModule required \
+            username="%s" password="%s";\
+            """.formatted(config.saslUsername(), config.saslPassword()).strip();
     }
 
     String getSaslScramJaasConfig() {
-        String jaasConfig = format("org.apache.kafka.common.security.scram.ScramLoginModule required " +
-            "username=\"%s\" password=\"%s\";", Configuration.SASL_USERNAME, Configuration.SASL_PASSWORD);
-        return jaasConfig;
+        return """
+            org.apache.kafka.common.security.scram.ScramLoginModule required \
+            username="%s" password="%s";\
+            """.formatted(config.saslUsername(), config.saslPassword()).strip();
     }
 
     String getSaslOauthJaasConfig() {
-        String jaasConfig = format("org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required " +
-                "oauth.client.id=\"%s\" oauth.client.secret=\"%s\" oauth.token.endpoint.uri=\"%s\" " +
-                "oauth.ssl.truststore.location=\"%s\" oauth.ssl.truststore.password=\"%s\" oauth.ssl.truststore.type=\"%s\";",
-            Configuration.SASL_OAUTH_CLIENT_ID,
-            Configuration.SASL_OAUTH_CLIENT_SECRET,
-            Configuration.SASL_OAUTH_TOKEN_ENDPOINT_URI,
-            Configuration.SSL_TRUSTSTORE_LOCATION,
-            Configuration.SSL_TRUSTSTORE_PASSWORD,
-            Configuration.SSL_TRUSTSTORE_TYPE
-        );
-        return jaasConfig;
+        return """
+            org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required \
+            oauth.client.id="%s" oauth.client.secret="%s" oauth.token.endpoint.uri="%s" \
+            oauth.ssl.truststore.location="%s" oauth.ssl.truststore.password="%s" oauth.ssl.truststore.type="%s";\
+            """.formatted(
+                config.saslOauthClientId(),
+                config.saslOauthClientSecret(),
+                config.saslOauthTokenEndpointUri(),
+                config.sslTruststoreLocation(),
+                config.sslTruststorePassword(),
+                config.sslTruststoreType()
+            ).strip();
     }
 }

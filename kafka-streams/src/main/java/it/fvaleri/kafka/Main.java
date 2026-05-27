@@ -1,9 +1,5 @@
 package it.fvaleri.kafka;
 
-import it.fvaleri.kafka.model.PageView;
-import it.fvaleri.kafka.model.Search;
-import it.fvaleri.kafka.model.UserActivity;
-import it.fvaleri.kafka.model.UserProfile;
 import it.fvaleri.kafka.serde.JsonDeserializer;
 import it.fvaleri.kafka.serde.JsonSerializer;
 import it.fvaleri.kafka.serde.WrapperSerde;
@@ -23,8 +19,6 @@ import org.apache.kafka.streams.errors.StreamsException;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.JoinWindows;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.StreamJoined;
@@ -52,42 +46,36 @@ public class Main {
     public static final String USER_ACTIVITY_TOPIC = "clicks.user.activity";
     
     public static void main(String[] args) {
-        StreamsBuilder builder = new StreamsBuilder();
-        KStream<Integer, PageView> views = builder.stream(PAGE_VIEW_TOPIC, Consumed.with(Serdes.Integer(), new PageViewSerde()));
-        KTable<Integer, UserProfile> profiles = builder.table(USER_PROFILE_TOPIC,
+        var builder = new StreamsBuilder();
+        var views = builder.stream(PAGE_VIEW_TOPIC, Consumed.with(Serdes.Integer(), new PageViewSerde()));
+        var profiles = builder.table(USER_PROFILE_TOPIC,
                 Consumed.with(Serdes.Integer(), new ProfileSerde()), Materialized.as("user-profile-store"));
-        KStream<Integer, Search> searches = builder.stream(SEARCH_TOPIC, Consumed.with(Serdes.Integer(), new SearchSerde()));
+        var searches = builder.stream(SEARCH_TOPIC, Consumed.with(Serdes.Integer(), new SearchSerde()));
 
-        KStream<Integer, UserActivity> viewsWithProfile = views.leftJoin(profiles,
+        var viewsWithProfile = views.leftJoin(profiles,
                 (page, profile) -> {
                     if (profile != null) {
-                        return new UserActivity(profile.getUserId(), profile.getUserName(), profile.getZipcode(), profile.getInterests(), "", page.getPage());
+                        return new Data.UserActivity(profile.userId(), profile.userName(), profile.zipcode(), profile.interests(), "", page.page());
                     } else {
-                        return new UserActivity(-1, "", "", null, "", page.getPage());
+                        return new Data.UserActivity(-1, "", "", null, "", page.page());
                     }
                 });
 
-        KStream<Integer, UserActivity> userActivityStream = viewsWithProfile.leftJoin(searches,
-                (userActivity, search) -> {
-                    if (search != null) {
-                        userActivity.updateSearch(search.getSearchTerms());
-                    } else {
-                        userActivity.updateSearch("");
-                    }
-                    return userActivity;
-                },
+        var userActivityStream = viewsWithProfile.leftJoin(searches,
+                (userActivity, search) ->
+                    userActivity.updateSearch(search != null ? search.searchTerms() : ""),
                 JoinWindows.ofTimeDifferenceWithNoGrace(Duration.ofSeconds(1)),
                 StreamJoined.with(Serdes.Integer(), new UserActivitySerde(), new SearchSerde())
                         .withStoreName("user-activity-join"));
 
         userActivityStream.to(USER_ACTIVITY_TOPIC, Produced.with(Serdes.Integer(), new UserActivitySerde()));
 
-        Topology topology = builder.build();
+        var topology = builder.build();
         LOG.info("Topology description:\n{}", topology.describe().toString());
-        KafkaStreams streams = createKafkaStreams(topology);
+        var streams = createKafkaStreams(topology);
         streams.setUncaughtExceptionHandler(new MyUncaughtExceptionHandler());
 
-        CountDownLatch latch = new CountDownLatch(1);
+        var latch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread("shutdown-hook") {
             @Override
             public void run() {
@@ -108,7 +96,7 @@ public class Main {
     }
 
     private static KafkaStreams createKafkaStreams(Topology topology) {
-        Properties props = new Properties();
+        var props = new Properties();
         // application.id is the same for all instances, and must be unique in the Kafka cluster
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "clicks");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
@@ -136,27 +124,27 @@ public class Main {
         return new KafkaStreams(topology, props);
     }
 
-    public static final class PageViewSerde extends WrapperSerde<PageView> {
+    public static final class PageViewSerde extends WrapperSerde<Data.PageView> {
         public PageViewSerde() {
-            super(new JsonSerializer<>(), new JsonDeserializer<>(PageView.class));
+            super(new JsonSerializer<>(), new JsonDeserializer<>(Data.PageView.class));
         }
     }
 
-    public static final class ProfileSerde extends WrapperSerde<UserProfile> {
+    public static final class ProfileSerde extends WrapperSerde<Data.UserProfile> {
         public ProfileSerde() {
-            super(new JsonSerializer<>(), new JsonDeserializer<>(UserProfile.class));
+            super(new JsonSerializer<>(), new JsonDeserializer<>(Data.UserProfile.class));
         }
     }
 
-    public static final class SearchSerde extends WrapperSerde<Search> {
+    public static final class SearchSerde extends WrapperSerde<Data.Search> {
         public SearchSerde() {
-            super(new JsonSerializer<>(), new JsonDeserializer<>(Search.class));
+            super(new JsonSerializer<>(), new JsonDeserializer<>(Data.Search.class));
         }
     }
 
-    static public final class UserActivitySerde extends WrapperSerde<UserActivity> {
+    static public final class UserActivitySerde extends WrapperSerde<Data.UserActivity> {
         public UserActivitySerde() {
-            super(new JsonSerializer<>(), new JsonDeserializer<>(UserActivity.class));
+            super(new JsonSerializer<>(), new JsonDeserializer<>(Data.UserActivity.class));
         }
     }
 

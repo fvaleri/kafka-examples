@@ -5,7 +5,6 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -39,14 +38,14 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            final AtomicBoolean shutdown = new AtomicBoolean(false);
+            var shutdown = new AtomicBoolean(false);
 
-            try (final Admin adminClient = Admin.create(Map.of(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS))) {
+            try (var adminClient = Admin.create(Map.of(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS))) {
                 adminClient.deleteTopics(List.of("test"));
                 adminClient.createTopics(Collections.singleton(new NewTopic("test", 1, (short) 1))).all().get(100, TimeUnit.SECONDS);
             }
 
-            final Properties producerProps = new Properties();
+            var producerProps = new Properties();
             producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
             producerProps.put(ProducerConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
             producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
@@ -54,7 +53,7 @@ public class Main {
             // set linger.ms=0 on the producer to minimize producer latency with low throughput use cases
             producerProps.put(ProducerConfig.LINGER_MS_CONFIG, 0);
 
-            final Properties consumerProps = new Properties();
+            var consumerProps = new Properties();
             consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
             consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
             consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
@@ -63,11 +62,11 @@ public class Main {
             consumerProps.put(ConsumerConfig.GROUP_PROTOCOL_CONFIG, "consumer");
             // set group.coordinator.append.linger.ms=0 on brokers to minimize e2e latency with low throughput
 
-            try (final KafkaProducer<String, Long> kafkaProducer = new KafkaProducer<>(producerProps);
-                 final KafkaConsumer<String, Long> kafkaConsumer = new KafkaConsumer<>(consumerProps)) {
+            try (var kafkaProducer = new KafkaProducer<String, Long>(producerProps);
+                 var kafkaConsumer = new KafkaConsumer<String, Long>(consumerProps)) {
                 kafkaConsumer.assign(List.of(new TopicPartition("test", 0)));
 
-                final ExecutorService executorService = Executors.newFixedThreadPool(2);
+                var executorService = Executors.newFixedThreadPool(2);
                 executorService.execute(() -> {
                     sendMessages(kafkaProducer, shutdown);
                     kafkaConsumer.wakeup();
@@ -99,7 +98,7 @@ public class Main {
     private static void receiveMessages(final KafkaConsumer<String, Long> kafkaConsumer, final AtomicBoolean shutdown) {
         try {
             while (!shutdown.get()) {
-                final ConsumerRecords<String, Long> records = kafkaConsumer.poll(Duration.ofSeconds(60));
+                var records = kafkaConsumer.poll(Duration.ofSeconds(60));
                 records.forEach(record ->
                         HISTOGRAM.recordValue(System.nanoTime() - record.value())
                 );

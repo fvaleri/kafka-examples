@@ -2,8 +2,6 @@ package it.fvaleri.kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.NoOffsetForPartitionException;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -24,7 +22,7 @@ import java.util.Properties;
 import static java.time.Duration.ofMillis;
 import static java.util.Collections.singleton;
 
-public class Consumer extends Client implements ConsumerRebalanceListener, OffsetCommitCallback {
+public final class Consumer extends Client implements ConsumerRebalanceListener, OffsetCommitCallback {
     private static final Logger LOG = LoggerFactory.getLogger(Consumer.class);
 
     private KafkaConsumer<Long, byte[]> kafkaConsumer;
@@ -39,22 +37,22 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
         // the consumer instance is NOT thread safe
         try (var consumer = createKafkaConsumer()) {
             kafkaConsumer = consumer;
-            consumer.subscribe(singleton(Configuration.TOPIC_NAME), this);
-            LOG.info("Subscribed to {}", Configuration.TOPIC_NAME);
-            while (!closed.get() && messageCount.get() < Configuration.NUM_MESSAGES) {
+            consumer.subscribe(singleton(config.topicName()), this);
+            LOG.info("Subscribed to {}", config.topicName());
+            while (!closed.get() && messageCount.get() < config.numMessages()) {
                 try {
                     // next poll must be called within session.timeout.ms to avoid rebalance
                     // FindCoordinator(any), OffsetFetch(group-coord), Metadata(any), Fetch(leader)
-                    ConsumerRecords<Long, byte[]> records = consumer.poll(ofMillis(Configuration.POLL_TIMEOUT_MS));
+                    var records = consumer.poll(ofMillis(config.pollTimeoutMs()));
                     if (!records.isEmpty()) {
-                        for (ConsumerRecord<Long, byte[]> record : records) {
+                        for (var record : records) {
                             LOG.info("Record fetched from partition {}-{} offset {}",
                                 record.topic(), record.partition(), record.offset());
-                            sleepMs(Configuration.PROCESSING_DELAY_MS);
+                            sleepMs(config.processingDelayMs());
                             // we only add to pending offsets after processing
                             pendingOffsets.put(new TopicPartition(record.topic(), record.partition()),
                                 new OffsetAndMetadata(record.offset() + 1, null));
-                            if (messageCount.incrementAndGet() == Configuration.NUM_MESSAGES) {
+                            if (messageCount.incrementAndGet() == config.numMessages()) {
                                 break;
                             }
                         }
@@ -71,7 +69,7 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
                     LOG.warn("Skipping invalid record at partition {} offset {}", e.topicPartition(), e.offset());
                     consumer.seek(e.topicPartition(), e.offset() + 1);
                     // in addition to skip the bad record you may want to send it to a DLQ (see KIP-1036)
-                    if (messageCount.incrementAndGet() == Configuration.NUM_MESSAGES) {
+                    if (messageCount.incrementAndGet() == config.numMessages()) {
                         break;
                     }
                 } catch (Exception e) {
@@ -85,14 +83,14 @@ public class Consumer extends Client implements ConsumerRebalanceListener, Offse
     }
 
     private KafkaConsumer<Long, byte[]> createKafkaConsumer() {
-        Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, Configuration.BOOTSTRAP_SERVERS);
-        props.put(ConsumerConfig.CLIENT_ID_CONFIG, Configuration.CLIENT_ID);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, Configuration.GROUP_ID);
+        var props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.bootstrapServers());
+        props.put(ConsumerConfig.CLIENT_ID_CONFIG, config.clientId());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, config.groupId());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        addConfig(props, Configuration.CONSUMER_CONFIG);
+        addConfig(props, config.consumerConfig());
         addSecurityConfig(props);
         return new KafkaConsumer<>(props);
     }

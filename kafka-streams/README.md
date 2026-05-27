@@ -3,7 +3,7 @@
 mvn clean package
 
 # generate fake data
-java -cp target/kafka-streams-*-run.jar it.fvaleri.kafka.GenerateData
+java -cp target/kafka-streams-*-run.jar it.fvaleri.kafka.Data
 
 # run the application (Ctrl+C to stop)
 java -jar target/kafka-streams-*-run.jar

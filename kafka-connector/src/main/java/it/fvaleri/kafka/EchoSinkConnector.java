@@ -32,7 +32,7 @@ public class EchoSinkConnector extends SinkConnector {
 
     @Override
     public void start(Map<String, String> props) {
-        AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
+        var parsedConfig = new AbstractConfig(CONFIG_DEF, props);
         logLevel = parsedConfig.getString(LEVEL_CONFIG);
         failTaskAfterRecords = parsedConfig.getLong(FAIL_TASK_AFTER_RECORDS_CONFIG);
     }
@@ -45,8 +45,8 @@ public class EchoSinkConnector extends SinkConnector {
     // the job is partitioned among maxTasks tasks
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
-        ArrayList<Map<String, String>> configs = new ArrayList<>();
-        Map<String, String> config = new HashMap<>(1);
+        var configs = new ArrayList<Map<String, String>>();
+        var config = new HashMap<String, String>(1);
 
         if (logLevel != null)
             config.put(LEVEL_CONFIG, logLevel);

@@ -4,8 +4,6 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.NoOffsetForPartitionException;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -30,12 +28,10 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.singleton;
@@ -79,16 +75,15 @@ public class Main {
             while (!closed) {
                 try {
                     LOG.info("Waiting for new data");
-                    ConsumerRecords<String, String> records = consumer.poll(ofSeconds(30));
+                    var records = consumer.poll(ofSeconds(30));
                     if (!records.isEmpty()) {
                         // begin a new transaction session
                         producer.beginTransaction();
 
                         LOG.info("Processing records and sending downstream");
-                        for (ConsumerRecord<String, String> record : records) {
-                            String newValue = new StringBuilder(record.value()).reverse().toString();
-                            ProducerRecord<String, String> newRecord =
-                                new ProducerRecord<>(outputTopic, record.key(), newValue);
+                        for (var record : records) {
+                            var newValue = new StringBuilder(record.value()).reverse().toString();
+                            var newRecord = new ProducerRecord<>(outputTopic, record.key(), newValue);
                             producer.send(newRecord);
                         }
 
@@ -126,7 +121,7 @@ public class Main {
     }
 
     private static KafkaProducer<String, String> createKafkaProducer() {
-        Properties props = new Properties();
+        var props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "client-" + UUID.randomUUID());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -140,7 +135,7 @@ public class Main {
     }
 
     private static KafkaConsumer<String, String> createKafkaConsumer() {
-        Properties props = new Properties();
+        var props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "client-" + UUID.randomUUID());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -156,24 +151,23 @@ public class Main {
     }
 
     private static Map<TopicPartition, OffsetAndMetadata> getOffsetsToCommit(KafkaConsumer<String, String> consumer) {
-        Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
-        for (TopicPartition topicPartition : consumer.assignment()) {
+        var offsets = new HashMap<TopicPartition, OffsetAndMetadata>();
+        for (var topicPartition : consumer.assignment()) {
             offsets.put(topicPartition, new OffsetAndMetadata(consumer.position(topicPartition), null));
         }
         return offsets;
     }
 
     private static void createTopics(String... topicNames) {
-        Properties props = new Properties();
+        var props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(AdminClientConfig.CLIENT_ID_CONFIG, "client" + UUID.randomUUID());
 
-        try (Admin admin = Admin.create(props)) {
-            // use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
+        try (var admin = Admin.create(props)) {
             short replicationFactor = -1;
-            List<NewTopic> newTopics = Arrays.stream(topicNames)
+            var newTopics = Arrays.stream(topicNames)
                 .map(name -> new NewTopic(name, -1, replicationFactor))
-                .collect(Collectors.toList());
+                .toList();
             try {
                 admin.createTopics(newTopics).all().get();
                 LOG.info("Created topics: {}", Arrays.toString(topicNames));
@@ -205,9 +199,9 @@ public class Main {
         if (retries < MAX_RETRIES) {
             // retry: reset fetch offset
             // the consumer fetch position needs to be restored to the committed offset before the transaction started
-            Map<TopicPartition, OffsetAndMetadata> committed = consumer.committed(consumer.assignment());
+            var committed = consumer.committed(consumer.assignment());
             consumer.assignment().forEach(tp -> {
-                OffsetAndMetadata offsetAndMetadata = committed.get(tp);
+                var offsetAndMetadata = committed.get(tp);
                 if (offsetAndMetadata != null) {
                     consumer.seek(tp, offsetAndMetadata.offset());
                 } else {

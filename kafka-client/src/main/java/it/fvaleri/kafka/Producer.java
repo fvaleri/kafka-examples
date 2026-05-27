@@ -12,7 +12,7 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Producer extends Client implements Callback {
+public final class Producer extends Client implements Callback {
     private static final Logger LOG = LoggerFactory.getLogger(Producer.class);
 
     public Producer(String threadName) {
@@ -23,13 +23,11 @@ public class Producer extends Client implements Callback {
     public void execute() {
         // the producer instance is thread safe
         try (var producer = createKafkaProducer()) {
-            createTopics(Configuration.TOPIC_NAME);
-            byte[] value = randomBytes(Configuration.MESSAGE_SIZE_BYTES);
-            while (!closed.get() && messageCount.get() < Configuration.NUM_MESSAGES) {
-                sleepMs(Configuration.PROCESSING_DELAY_MS);
-                // async send but still blocks when buffer.memory is full or metadata are not available
-                // InitProducerId(leader), Produce(leader)
-                producer.send(new ProducerRecord<>(Configuration.TOPIC_NAME, messageCount.get(), value), this);
+            createTopics(config.topicName());
+            var value = randomBytes(config.messageSizeBytes());
+            while (!closed.get() && messageCount.get() < config.numMessages()) {
+                sleepMs(config.processingDelayMs());
+                producer.send(new ProducerRecord<>(config.topicName(), messageCount.get(), value), this);
                 messageCount.incrementAndGet();
             }
             LOG.info("Flushing records");
@@ -38,12 +36,12 @@ public class Producer extends Client implements Callback {
     }
 
     private KafkaProducer<Long, byte[]> createKafkaProducer() {
-        Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, Configuration.BOOTSTRAP_SERVERS);
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, Configuration.CLIENT_ID);
+        var props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.bootstrapServers());
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, config.clientId());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        addConfig(props, Configuration.PRODUCER_CONFIG);
+        addConfig(props, config.producerConfig());
         addSecurityConfig(props);
         return new KafkaProducer<>(props);
     }

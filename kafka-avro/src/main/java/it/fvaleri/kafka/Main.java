@@ -10,7 +10,6 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -22,15 +21,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
@@ -54,12 +50,12 @@ public class Main {
         try (var producer = createKafkaProducer();
              var consumer = createKafkaConsumer()) {
             createTopics(topicName);
-            Schema schema = loadSchemaFromFile("greeting-v1.avsc");
+            var schema = loadSchemaFromFile("greeting-v1.avsc");
 
             LOG.info("Producing records");
             for (int i = 0; i < 5; i++) {
                 // we use the generic record instead of generating classes from the schema
-                GenericRecord record = new GenericData.Record(schema);
+                var record = new GenericData.Record(schema);
                 record.put("Message", "Hello");
                 record.put("Time", System.currentTimeMillis());
                 producer.send(new ProducerRecord<>(topicName, null, record));
@@ -68,7 +64,7 @@ public class Main {
             LOG.info("Consuming records");
             consumer.subscribe(Set.of(topicName));
             // the deserializer extracts the globalId from payload and uses it to look up the schema
-            ConsumerRecords<String, GenericRecord> records = consumer.poll(Duration.ofSeconds(5));
+            var records = consumer.poll(Duration.ofSeconds(5));
             records.forEach(record
                     -> LOG.info("Record: {}-{}", record.value().get("Message"), record.value().get("Time")));
         } catch (Throwable e) {
@@ -77,7 +73,7 @@ public class Main {
     }
 
     private static KafkaProducer<String, GenericRecord> createKafkaProducer() {
-        Properties props = new Properties();
+        var props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "client-" + UUID.randomUUID());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
@@ -89,7 +85,7 @@ public class Main {
     }
 
     private static KafkaConsumer<String, GenericRecord> createKafkaConsumer() {
-        Properties props = new Properties();
+        var props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "client-" + UUID.randomUUID());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "my-group");
@@ -104,15 +100,14 @@ public class Main {
     }
 
     private static void createTopics(String... topicNames) {
-        Properties props = new Properties();
+        var props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(AdminClientConfig.CLIENT_ID_CONFIG, "client" + UUID.randomUUID());
-        try (Admin admin = Admin.create(props)) {
-            // use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
+        try (var admin = Admin.create(props)) {
             short replicationFactor = -1;
-            List<NewTopic> newTopics = Arrays.stream(topicNames)
+            var newTopics = Arrays.stream(topicNames)
                 .map(name -> new NewTopic(name, -1, replicationFactor))
-                .collect(Collectors.toList());
+                .toList();
             try {
                 admin.createTopics(newTopics).all().get();
                 LOG.info("Created topics: {}", Arrays.toString(topicNames));
@@ -128,7 +123,7 @@ public class Main {
 
     private static Schema loadSchemaFromFile(String fileName) {
         LOG.info("Loading schema from file: {}", fileName);
-        try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream(fileName)) {
+        try (var inputStream = Main.class.getClassLoader().getResourceAsStream(fileName)) {
             if (inputStream == null) {
                 LOG.error("Schema file not found: {}", fileName);
                 System.exit(1);
