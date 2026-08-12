@@ -1,5 +1,8 @@
 ```sh
-### run on localhost
+############################
+##### Run on localhost #####
+############################
+
 curl -sLk https://repo1.maven.org/maven2/io/apicurio/apicurio-registry-app/3.1.6/apicurio-registry-app-3.1.6-all.tar.gz \
   | tar -xzf - -C /tmp && nohup java -jar "/tmp/quarkus-app/quarkus-run.jar" >/dev/null 2>&1 &
 
@@ -7,7 +10,7 @@ export BOOTSTRAP_SERVERS="localhost:9092" \
   REGISTRY_URL="http://localhost:8080/apis/registry/v3" \
   TOPIC_NAME="my-topic"
 
-# register the message schema
+# Register the message schema
 curl -s -X POST "$REGISTRY_URL"/groups/default/artifacts \
   -H "Content-Type: application/json" \
   -d @src/main/resources/my-topic-value.json | yq -o json
@@ -36,7 +39,10 @@ curl -s -X POST "$REGISTRY_URL"/groups/default/artifacts \
 
 mvn compile exec:java -q
 
-### run on Kubernetes
+#############################
+##### Run on Kubernetes #####
+#############################
+
 mvn clean package
 
 docker build -t ghcr.io/fvaleri/kafka-avro:latest .
@@ -47,7 +53,7 @@ export BOOTSTRAP_SERVERS=$(kubectl get k my-cluster -o yaml | yq '.status.listen
   REGISTRY_URL=http://$(kubectl get apicurioregistries3 my-schema-registry -o jsonpath="{.spec.app.ingress.host}")/apis/registry/v3 \
   TOPIC_NAME="my-topic"
 
-# register the message schema
+# Register the message schema
 curl -s -X POST "$REGISTRY_URL/groups/default/artifacts \
   -H "Content-Type: application/json" \
   -d @src/main/resources/my-topic-value.json | yq -o json

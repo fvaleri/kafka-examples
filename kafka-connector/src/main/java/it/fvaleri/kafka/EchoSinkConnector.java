@@ -42,7 +42,7 @@ public class EchoSinkConnector extends SinkConnector {
         return EchoSinkTask.class;
     }
 
-    // the job is partitioned among maxTasks tasks
+    // The job is partitioned among maxTasks tasks
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
         var configs = new ArrayList<Map<String, String>>();
@@ -61,7 +61,7 @@ public class EchoSinkConnector extends SinkConnector {
 
     @Override
     public void stop() {
-        // noop
+        // Noop
     }
 
     @Override

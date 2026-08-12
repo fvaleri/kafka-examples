@@ -54,7 +54,7 @@ public class Main {
 
             LOG.info("Producing records");
             for (int i = 0; i < 5; i++) {
-                // we use the generic record instead of generating classes from the schema
+                // We use the generic record instead of generating classes from the schema
                 var record = new GenericData.Record(schema);
                 record.put("Message", "Hello");
                 record.put("Time", System.currentTimeMillis());
@@ -63,7 +63,7 @@ public class Main {
 
             LOG.info("Consuming records");
             consumer.subscribe(Set.of(topicName));
-            // the deserializer extracts the globalId from payload and uses it to look up the schema
+            // The deserializer extracts the globalId from payload and uses it to look up the schema
             var records = consumer.poll(Duration.ofSeconds(5));
             records.forEach(record
                     -> LOG.info("Record: {}-{}", record.value().get("Message"), record.value().get("Time")));
@@ -79,7 +79,7 @@ public class Main {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, AvroKafkaSerializer.class.getName());
         props.put(SerdeConfig.REGISTRY_URL, registryUrl);
-        // this configures the schema cache eviction period
+        // This configures the schema cache eviction period
         props.putIfAbsent(SerdeConfig.CHECK_PERIOD_MS, 30_000);
         return new KafkaProducer<>(props);
     }
@@ -94,7 +94,7 @@ public class Main {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());
         props.put(SerdeConfig.REGISTRY_URL, registryUrl);
-        // this configures the schema cache eviction period
+        // This configures the schema cache eviction period
         props.putIfAbsent(SerdeConfig.CHECK_PERIOD_MS, 30_000);
         return new KafkaConsumer<>(props);
     }

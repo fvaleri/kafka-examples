@@ -1,9 +1,9 @@
 ```sh
-# run on localhost
+# Run on localhost
 NUM_MESSAGES="100" mvn compile exec:java
 CLIENT_TYPE="consumer" NUM_MESSAGES="100" mvn compile exec:java
 
-# run on Kubernetes
+# Run on Kubernetes
 mvn clean package
 
 docker build -t ghcr.io/fvaleri/kafka-client:latest .

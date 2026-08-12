@@ -61,13 +61,13 @@ public sealed abstract class Client extends Thread permits Producer, Consumer {
         }
     }
 
-    // implement the execution loop
+    // Implement the execution loop
     abstract void execute();
 
-    // override when custom shutdown logic is needed
+    // Override when custom shutdown logic is needed
     void onShutdown() {
     }
-    
+
     void sleepMs(long millis) {
         try {
             TimeUnit.MILLISECONDS.sleep(millis);
@@ -93,7 +93,7 @@ public sealed abstract class Client extends Thread permits Producer, Consumer {
     }
 
     void createTopics(String... topicNames) {
-        // use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
+        // Use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
         createTopics(config.bootstrapServers(), -1, -1, topicNames);
     }
 
@@ -131,7 +131,7 @@ public sealed abstract class Client extends Thread permits Producer, Consumer {
         }
         props.putAll(addProps);
     }
-    
+
     void addSecurityConfig(Properties props) {
         props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, config.securityProtocol());
         props.put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG,

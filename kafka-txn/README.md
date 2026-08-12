@@ -1,5 +1,8 @@
 ```sh
-# run on localhost
+############################
+##### Run on localhost #####
+############################
+
 export BOOTSTRAP_SERVERS="localhost:9092" \
        INSTANCE_ID="kafka-txn-0" \
        GROUP_ID="my-group" \
@@ -10,7 +13,10 @@ mvn compile exec:java
 bin/kafka-console-producer.sh --bootstrap-server :9092 --topic input-topic
 bin/kafka-console-consumer.sh --bootstrap-server :9092 --topic output-topic --from-beginning
 
-# run on Kubernetes
+#############################
+##### Run on Kubernetes #####
+#############################
+
 mvn clean package
 
 docker build -t ghcr.io/fvaleri/kafka-txn:latest .

@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
-// each task runs in its own thread
+// Each task runs in its own thread
 public class EchoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(EchoSinkTask.class);
 
@@ -48,7 +48,7 @@ public class EchoSinkTask extends SinkTask {
         };
     }
 
-    // the main logic is here
+    // The main logic is here
     @Override
     public void put(Collection<SinkRecord> sinkRecords) {
         for (var record : sinkRecords) {

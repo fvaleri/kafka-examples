@@ -67,7 +67,7 @@ public class Main {
         try (var producer = createKafkaProducer();
              var consumer = createKafkaConsumer()) {
             createTopics(inputTopic, outputTopic);
-            // called first and once to fence zombies and abort any pending transaction
+            // Called first and once to fence zombies and abort any pending transaction
             producer.initTransactions();
             
             consumer.subscribe(singleton(inputTopic));
@@ -77,7 +77,7 @@ public class Main {
                     LOG.info("Waiting for new data");
                     var records = consumer.poll(ofSeconds(30));
                     if (!records.isEmpty()) {
-                        // begin a new transaction session
+                        // Begin a new transaction session
                         producer.beginTransaction();
 
                         LOG.info("Processing records and sending downstream");
@@ -87,29 +87,29 @@ public class Main {
                             producer.send(newRecord);
                         }
 
-                        // checkpoint the progress by sending offsets to group coordinator broker
-                        // note that this API is only available for broker >= 2.5
+                        // Checkpoint the progress by sending offsets to group coordinator broker.
+                        // Note that this API is only available for broker >= 2.5.
                         producer.sendOffsetsToTransaction(getOffsetsToCommit(consumer), consumer.groupMetadata());
 
-                        // commit the transaction including offsets
+                        // Commit the transaction including offsets
                         producer.commitTransaction();
                         retries = 0;
                     }
                 } catch (AuthorizationException | UnsupportedVersionException | ProducerFencedException
                          | FencedInstanceIdException | OutOfOrderSequenceException | SerializationException e) {
-                    // we can't recover from these exceptions
+                    // We can't recover from these exceptions
                     e.printStackTrace();
                     closed = true;
                 } catch (OffsetOutOfRangeException | NoOffsetForPartitionException e) {
-                    // invalid or no offset found without auto.reset.policy
+                    // Invalid or no offset found without auto.reset.policy
                     LOG.warn("Invalid or no offset found, using latest");
                     consumer.seekToEnd(e.partitions());
                     consumer.commitSync();
                     retries = 0;
                 } catch (KafkaException e) {
-                    // abort the transaction and continue
-                    // in a real world application you would need to send these 
-                    // records to a DLT (dead letter topic) for further processing
+                    // Abort the transaction and continue.
+                    // In a real world application you would need to send these
+                    // records to a DLT (dead letter topic) for further processing.
                     LOG.error("Aborting transaction: {}", e.getMessage());
                     producer.abortTransaction();
                     retries = maybeRetry(retries, consumer);
@@ -128,7 +128,7 @@ public class Main {
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
         props.put(ProducerConfig.ACKS_CONFIG, "all");
-        // transactionalId must be the same between different produce process incarnations
+        // transactional.id must be the same between different produce process incarnations
         props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, instanceId);
         props.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, 60_000);
         return new KafkaProducer<>(props);
@@ -143,9 +143,9 @@ public class Main {
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.GROUP_PROTOCOL_CONFIG, "consumer");
-        // consumer can set groupInstanceId to avoid unnecessary rebalances
+        // Consumer can set groupInstanceId to avoid unnecessary rebalances
         props.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, instanceId);
-        // all records are fetched with read_committed but ongoing and aborted transactions are ignored
+        // All records are fetched with read_committed but ongoing and aborted transactions are ignored
         props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
         return new KafkaConsumer<>(props);
     }
@@ -197,8 +197,8 @@ public class Main {
         }
 
         if (retries < MAX_RETRIES) {
-            // retry: reset fetch offset
-            // the consumer fetch position needs to be restored to the committed offset before the transaction started
+            // Retry: reset fetch offset.
+            // The consumer fetch position needs to be restored to the committed offset before the transaction started.
             var committed = consumer.committed(consumer.assignment());
             consumer.assignment().forEach(tp -> {
                 var offsetAndMetadata = committed.get(tp);
@@ -210,8 +210,8 @@ public class Main {
             });
             retries++;
         } else {
-            // continue: skip records
-            // the consumer fetch position needs to be committed as if records were processed successfully
+            // Continue: skip records.
+            // The consumer fetch position needs to be committed as if records were processed successfully.
             LOG.error("Skipping records after {} retries", MAX_RETRIES);
             consumer.commitSync();
             retries = 0;

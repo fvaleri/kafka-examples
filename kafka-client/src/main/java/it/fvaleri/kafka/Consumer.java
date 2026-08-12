@@ -34,14 +34,14 @@ public final class Consumer extends Client implements ConsumerRebalanceListener,
 
     @Override
     public void execute() {
-        // the consumer instance is NOT thread safe
+        // The consumer instance is NOT thread safe
         try (var consumer = createKafkaConsumer()) {
             kafkaConsumer = consumer;
             consumer.subscribe(singleton(config.topicName()), this);
             LOG.info("Subscribed to {}", config.topicName());
             while (!closed.get() && messageCount.get() < config.numMessages()) {
                 try {
-                    // next poll must be called within session.timeout.ms to avoid rebalance
+                    // Next poll must be called within session.timeout.ms to avoid rebalance
                     // FindCoordinator(any), OffsetFetch(group-coord), Metadata(any), Fetch(leader)
                     var records = consumer.poll(ofMillis(config.pollTimeoutMs()));
                     if (!records.isEmpty()) {
@@ -49,14 +49,14 @@ public final class Consumer extends Client implements ConsumerRebalanceListener,
                             LOG.info("Record fetched from partition {}-{} offset {}",
                                 record.topic(), record.partition(), record.offset());
                             sleepMs(config.processingDelayMs());
-                            // we only add to pending offsets after processing
+                            // We only add to pending offsets after processing
                             pendingOffsets.put(new TopicPartition(record.topic(), record.partition()),
                                 new OffsetAndMetadata(record.offset() + 1, null));
                             if (messageCount.incrementAndGet() == config.numMessages()) {
                                 break;
                             }
                         }
-                        // commit after processing (at-least-once semantics)
+                        // Commit after processing (at-least-once semantics)
                         consumer.commitAsync(pendingOffsets, this); // OffsetCommit(group-coord)
                         pendingOffsets.clear();
                     }
@@ -65,7 +65,7 @@ public final class Consumer extends Client implements ConsumerRebalanceListener,
                     consumer.seekToEnd(e.partitions());
                     consumer.commitSync();
                 } catch (RecordDeserializationException e) {
-                    // parsed records are returned first, the RDE is thrown on the next poll
+                    // Parsed records are returned first, the RDE is thrown on the next poll
                     LOG.warn("Skipping invalid record at partition {} offset {}", e.topicPartition(), e.offset());
                     consumer.seek(e.topicPartition(), e.offset() + 1);
                     // in addition to skip the bad record you may want to send it to a DLQ (see KIP-1036)
@@ -111,9 +111,9 @@ public final class Consumer extends Client implements ConsumerRebalanceListener,
     @Override
     public void onPartitionsLost(Collection<TopicPartition> partitions) {
         LOG.info("Lost partitions: {}", partitions);
-        // this is called when partitions are reassigned before we had a chance to revoke them gracefully
-        // we can't commit pending offsets because these partitions are probably owned by other consumers already
-        // nevertheless, we may need to do some other cleanup
+        // This is called when partitions are reassigned before we had a chance to revoke them gracefully.
+        // We can't commit pending offsets because these partitions are probably owned by other consumers already.
+        // Nevertheless, we may need to do some other cleanup.
     }
 
     @Override
