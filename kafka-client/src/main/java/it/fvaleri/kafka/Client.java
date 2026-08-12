@@ -93,7 +93,7 @@ public sealed abstract class Client extends Thread permits Producer, Consumer {
     }
 
     void createTopics(String... topicNames) {
-        // use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
+        // Use default RF to avoid NOT_ENOUGH_REPLICAS error with minISR>1
         createTopics(config.bootstrapServers(), -1, -1, topicNames);
     }
 

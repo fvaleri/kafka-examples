@@ -24,7 +24,7 @@ public class XmlWriter<R extends ConnectRecord<R>> implements Transformation<R> 
     @Override
     public R apply(R record) {
         LOG.debug("Input record: {}", record.value());
-        // change event filtering and flattening
+        // Change event filtering and flattening
         var value = new JSONObject(record.value().toString());
         var op = value.getString("op");
         LOG.debug("Operation: {}", op);

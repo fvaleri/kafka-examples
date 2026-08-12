@@ -21,7 +21,7 @@ public final class Producer extends Client implements Callback {
 
     @Override
     public void execute() {
-        // the producer instance is thread safe
+        // The producer instance is thread safe
         try (var producer = createKafkaProducer()) {
             createTopics(config.topicName());
             var value = randomBytes(config.messageSizeBytes());

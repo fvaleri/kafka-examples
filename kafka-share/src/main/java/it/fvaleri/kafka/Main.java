@@ -18,23 +18,23 @@ public class Main {
 
     public static void main(String[] args) {
         try (var consumer = createKafkaShareConsumer()) {
-            // subscribe to a topic, joining the share group
+            // Subscribe to a topic, joining the share group
             consumer.subscribe(singleton("my-topic"));
             while (true) {
-                // poll RELEASE any unacknowledged records from the previous poll
+                // Poll RELEASE any unacknowledged records from the previous poll
                 var records = consumer.poll(Duration.ofMillis(100));
                 for (var record : records) {
                     try {
                         LOG.info("Got {}", record.value().length() > 5
                                 ? record.value().substring(0, 6) + "..." : record.value());
-                        // mark the record as processed successfully update (local state)
+                        // Mark the record as processed successfully update (local state)
                         consumer.acknowledge(record, AcknowledgeType.ACCEPT);
                     } catch (Exception e) {
-                        // mark this record as unprocessable or route to a DLQ (local state)
+                        // Mark this record as unprocessable (local state) or route to a DLQ
                         consumer.acknowledge(record, AcknowledgeType.REJECT);
                     }
                 }
-                // commit the acknowledgements of all records in the batch (brokers state)
+                // Commit the acknowledgements of all records in the batch (brokers state)
                 var result = consumer.commitSync();
                 result.forEach((topicIdPartition, exception) -> {
                     if (exception.isPresent()) {

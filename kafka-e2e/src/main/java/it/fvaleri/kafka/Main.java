@@ -50,7 +50,7 @@ public class Main {
             producerProps.put(ProducerConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
             producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
             producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName());
-            // set linger.ms=0 on the producer to minimize producer latency with low throughput use cases
+            // Set linger.ms=0 on the producer to minimize producer latency with low throughput use cases
             producerProps.put(ProducerConfig.LINGER_MS_CONFIG, 0);
 
             var consumerProps = new Properties();
@@ -60,7 +60,7 @@ public class Main {
             consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString());
             consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
             consumerProps.put(ConsumerConfig.GROUP_PROTOCOL_CONFIG, "consumer");
-            // set group.coordinator.append.linger.ms=0 on brokers to minimize e2e latency with low throughput
+            // Set group.coordinator.append.linger.ms=0 on brokers to minimize e2e latency with low throughput
 
             try (var kafkaProducer = new KafkaProducer<String, Long>(producerProps);
                  var kafkaConsumer = new KafkaConsumer<String, Long>(consumerProps)) {
@@ -105,7 +105,7 @@ public class Main {
                 kafkaConsumer.commitSync();
             }
         } catch (final WakeupException e) {
-            // ignored
+            // Ignored
         }
     }
 

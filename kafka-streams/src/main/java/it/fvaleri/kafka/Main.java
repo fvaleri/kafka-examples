@@ -102,22 +102,22 @@ public class Main {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.Integer().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        // balance txn overhead with latency
+        // Balance txn overhead with latency
         props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
-        // setting offset reset to the earliest so that we can re-run the demo code with the same preloaded data
+        // Setting offset reset to the earliest so that we can re-run the demo code with the same preloaded data
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        // input topic offsets commits, state stores updates, and output topics writes completed atomically
+        // Input topic offsets commits, state stores updates, and output topics writes completed atomically
         props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
-        // each thread will be assigned with one or more tasks (max active threads == total number of input partition)
+        // Each thread will be assigned with one or more tasks (max active threads == total number of input partition)
         props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 2 * Runtime.getRuntime().availableProcessors());
-        // if you configure N standby replicas, you need to provision N+1 KafkaStreams instances
+        // If you configure N standby replicas, you need to provision N+1 KafkaStreams instances
         props.put(StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG, 0);
-        // serde exception handlers
+        // Serde exception handlers
         props.put(StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, MyDeserializationErrorHandler.class);
         props.put(StreamsConfig.PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, MyProductionExceptionHandler.class);
         props.put(StreamsConfig.PROCESSING_EXCEPTION_HANDLER_GLOBAL_ENABLED_CONFIG, true);
         props.put(StreamsConfig.STATE_DIR_CONFIG, "target/state-dir");
-        // reconnections and retries
+        // Reconnections and retries
         props.put(StreamsConfig.RECONNECT_BACKOFF_MS_CONFIG, 50);
         props.put(StreamsConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG, 1_000);
         props.put(StreamsConfig.RETRY_BACKOFF_MS_CONFIG, 100);

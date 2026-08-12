@@ -1,15 +1,15 @@
 ```sh
-# create a test topic and send some messages
+# Create a test topic and send some messages
 bin/kafka-topics.sh --bootstrap-server :9092 --create --topic my-topic --partitions 1
 
-# run the example
+# Run the example
 mvn compile exec:java
 
-# check share groups
+# Check share groups
 bin/kafka-share-groups.sh --bootstrap-server :9092 --describe --group my-share-group
 bin/kafka-share-groups.sh --bootstrap-server :9092 --describe --group my-share-group --members
 
-# send some messages
+# Send some messages
 bin/kafka-producer-perf-test.sh --command-property bootstrap.servers=:9092 linger.ms=0 batch.size=10000 \
   --topic my-topic --throughput 5 --payload-monotonic --num-records 1000
 ```
